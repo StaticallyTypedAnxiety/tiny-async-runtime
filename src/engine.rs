@@ -8,26 +8,32 @@ use std::{
 
 use crate::bindings::wasi::io::poll::{poll, Pollable};
 
-pub struct WasmRuntimeEngine {
+/// The async engine instance
+pub struct WasmRuntimeAsyncEngine {
     waker: Arc<FutureWaker>,
     recv: Receiver<()>,
 }
+
+/// the reactor that processes poll submissions.
+/// TODO: should be given future support
 #[derive(Clone)]
 pub struct Reactor;
 
 impl Reactor {
+    ///calls poll::poll in wasi:io. Useful for finidng out state of subscribed resources
     pub fn poll(polls: &[&Pollable]) -> Vec<u32> {
         poll(polls)
     }
 }
 
-impl WasmRuntimeEngine {
+impl WasmRuntimeAsyncEngine {
+    /// function to execute futures
     pub fn block_on<K, F: Future<Output = K>, Fun: FnOnce(Reactor) -> F>(async_closure: Fun) -> K {
         let reactor = Reactor;
         let future = async_closure(reactor);
         pin_mut!(future);
         let (sender, recv) = crossbeam::channel::unbounded();
-        let runtime_engine = WasmRuntimeEngine {
+        let runtime_engine = WasmRuntimeAsyncEngine {
             waker: Arc::new(FutureWaker(sender.clone())),
             recv,
         };
@@ -89,7 +95,7 @@ mod test {
     fn test_enqueue() {
         let (sender, recv) = crossbeam::channel::unbounded();
         let count_future = CountFuture { max: 3, min: 0 };
-        let runtime_engine = WasmRuntimeEngine {
+        let runtime_engine = WasmRuntimeAsyncEngine {
             waker: FutureWaker(sender).into(),
             recv,
         };
@@ -106,7 +112,7 @@ mod test {
         let count_future = CountFuture { max: 3, min: 0 };
 
         assert_eq!(
-            WasmRuntimeEngine::block_on(|_reactor| async move { count_future.await }),
+            WasmRuntimeAsyncEngine::block_on(|_reactor| async move { count_future.await }),
             3
         );
     }
