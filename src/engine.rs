@@ -15,7 +15,6 @@ pub struct WasmRuntimeAsyncEngine {
 }
 
 /// the reactor that processes poll submissions.
-/// TODO: should be given future support
 #[derive(Clone)]
 pub struct Reactor;
 
