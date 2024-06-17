@@ -1,12 +1,12 @@
 use crossbeam::channel::{Receiver, Sender};
 use futures::pin_mut;
-use std::sync::Arc;
 use std::{
     future::Future,
+    sync::Arc,
     task::{Context, Poll, Wake},
 };
-
-use crate::bindings::wasi::io::poll::{poll, Pollable};
+const TASK_QUEUE_BUFFER: usize = 1024;
+use crate::{bindings::wasi::io::poll::Pollable, poll_tasks::PollTasks};
 
 /// The async engine instance
 pub struct WasmRuntimeAsyncEngine {
@@ -20,9 +20,9 @@ pub struct WasmRuntimeAsyncEngine {
 pub struct Reactor;
 
 impl Reactor {
-    ///calls poll::poll in wasi:io. Useful for finidng out state of subscribed resources
-    pub fn poll(polls: &[&Pollable]) -> Vec<u32> {
-        poll(polls)
+    ///returns a future used to call wasi poll
+    pub fn poll(polls: Vec<Pollable>) -> PollTasks {
+        PollTasks::new(polls)
     }
 }
 
@@ -32,7 +32,7 @@ impl WasmRuntimeAsyncEngine {
         let reactor = Reactor;
         let future = async_closure(reactor);
         pin_mut!(future);
-        let (sender, recv) = crossbeam::channel::unbounded();
+        let (sender, recv) = crossbeam::channel::bounded(TASK_QUEUE_BUFFER);
         let runtime_engine = WasmRuntimeAsyncEngine {
             waker: Arc::new(FutureWaker(sender.clone())),
             recv,
