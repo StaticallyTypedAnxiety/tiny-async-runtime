@@ -3,4 +3,4 @@
 ## features
 - [x] single threaded
 - [x] Wasi Preview 2 Components support
-- [ ] wasi:io support
+- [x] wasi:io support
