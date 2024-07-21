@@ -1,5 +1,6 @@
 use crossbeam::channel::{Receiver, Sender};
 use futures::pin_mut;
+use futures::StreamExt;
 use std::{
     future::Future,
     sync::Arc,
@@ -14,22 +15,29 @@ pub struct WasmRuntimeAsyncEngine {
     recv: Receiver<()>,
 }
 
-/// the reactor that processes poll submissions.
-#[derive(Clone)]
-pub struct Reactor;
+/// the reactor that processes poll submissions. Still Experimental
+
+#[derive(Default)]
+pub struct Reactor {
+    events: PollTasks,
+}
 
 impl Reactor {
-    ///returns a future used to call wasi poll
-    pub fn poll(polls: Vec<Pollable>) -> PollTasks {
-        PollTasks::new(polls)
+    //adds event to the queue
+    pub fn add_to_queue(&mut self, event_name: String, pollable: Pollable) {
+        self.events.push(event_name, pollable);
+    }
+
+    //polls event queue to see if any of the events are readycar
+    pub async fn wait(&mut self) -> Option<Vec<String>> {
+        self.events.next().await
     }
 }
 
 impl WasmRuntimeAsyncEngine {
     /// function to execute futures
     pub fn block_on<K, F: Future<Output = K>, Fun: FnOnce(Reactor) -> F>(async_closure: Fun) -> K {
-        let reactor = Reactor;
-        let future = async_closure(reactor);
+        let future = async_closure(Reactor::default());
         pin_mut!(future);
         let (sender, recv) = crossbeam::channel::bounded(TASK_QUEUE_BUFFER);
         let runtime_engine = WasmRuntimeAsyncEngine {
