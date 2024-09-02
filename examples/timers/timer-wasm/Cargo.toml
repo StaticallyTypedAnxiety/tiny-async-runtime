@@ -22,5 +22,4 @@ package = "component:timer-wasm"
 
 
 [package.metadata.component.target.dependencies]
-"wasi:io" = {path = "wit/deps/io"}
-"wasi:clocks" = {path = "wit/deps/clocks"}
+

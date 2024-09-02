@@ -3,6 +3,108 @@
 #[allow(dead_code)]
 pub mod wasi {
     #[allow(dead_code)]
+    pub mod clocks {
+        #[allow(dead_code, clippy::all)]
+        pub mod monotonic_clock {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            pub type Pollable = super::super::super::wasi::io::poll::Pollable;
+            /// An instant in time, in nanoseconds. An instant is relative to an
+            /// unspecified initial value, and can only be compared to instances from
+            /// the same monotonic-clock.
+            pub type Instant = u64;
+            /// A duration of time, in nanoseconds.
+            pub type Duration = u64;
+            #[allow(unused_unsafe, clippy::all)]
+            /// Read the current value of the clock.
+            ///
+            /// The clock is monotonic, therefore calling this function repeatedly will
+            /// produce a sequence of non-decreasing values.
+            pub fn now() -> Instant {
+                unsafe {
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wasi:clocks/monotonic-clock@0.2.0")]
+                    extern "C" {
+                        #[link_name = "now"]
+                        fn wit_import() -> i64;
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import() -> i64 {
+                        unreachable!()
+                    }
+                    let ret = wit_import();
+                    ret as u64
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            /// Query the resolution of the clock. Returns the duration of time
+            /// corresponding to a clock tick.
+            pub fn resolution() -> Duration {
+                unsafe {
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wasi:clocks/monotonic-clock@0.2.0")]
+                    extern "C" {
+                        #[link_name = "resolution"]
+                        fn wit_import() -> i64;
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import() -> i64 {
+                        unreachable!()
+                    }
+                    let ret = wit_import();
+                    ret as u64
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            /// Create a `pollable` which will resolve once the specified instant
+            /// occured.
+            pub fn subscribe_instant(when: Instant) -> Pollable {
+                unsafe {
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wasi:clocks/monotonic-clock@0.2.0")]
+                    extern "C" {
+                        #[link_name = "subscribe-instant"]
+                        fn wit_import(_: i64) -> i32;
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: i64) -> i32 {
+                        unreachable!()
+                    }
+                    let ret = wit_import(_rt::as_i64(when));
+                    super::super::super::wasi::io::poll::Pollable::from_handle(ret as u32)
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            /// Create a `pollable` which will resolve once the given duration has
+            /// elapsed, starting at the time at which this function was called.
+            /// occured.
+            pub fn subscribe_duration(when: Duration) -> Pollable {
+                unsafe {
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wasi:clocks/monotonic-clock@0.2.0")]
+                    extern "C" {
+                        #[link_name = "subscribe-duration"]
+                        fn wit_import(_: i64) -> i32;
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: i64) -> i32 {
+                        unreachable!()
+                    }
+                    let ret = wit_import(_rt::as_i64(when));
+                    super::super::super::wasi::io::poll::Pollable::from_handle(ret as u32)
+                }
+            }
+        }
+    }
+    #[allow(dead_code)]
     pub mod io {
         #[allow(dead_code, clippy::all)]
         pub mod poll {
@@ -283,20 +385,53 @@ mod _rt {
     }
     pub use alloc_crate::alloc;
     pub use alloc_crate::vec::Vec;
+
+    pub fn as_i64<T: AsI64>(t: T) -> i64 {
+        t.as_i64()
+    }
+
+    pub trait AsI64 {
+        fn as_i64(self) -> i64;
+    }
+
+    impl<'a, T: Copy + AsI64> AsI64 for &'a T {
+        fn as_i64(self) -> i64 {
+            (*self).as_i64()
+        }
+    }
+
+    impl AsI64 for i64 {
+        #[inline]
+        fn as_i64(self) -> i64 {
+            self as i64
+        }
+    }
+
+    impl AsI64 for u64 {
+        #[inline]
+        fn as_i64(self) -> i64 {
+            self as i64
+        }
+    }
     extern crate alloc as alloc_crate;
 }
 
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:wasm-runtime:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 319] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xbc\x01\x01A\x02\x01\
-A\x02\x01B\x0a\x04\0\x08pollable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\x04\0\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 526] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x8b\x03\x01A\x02\x01\
+A\x05\x01B\x0a\x04\0\x08pollable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\x04\0\
 \x16[method]pollable.ready\x01\x02\x01@\x01\x04self\x01\x01\0\x04\0\x16[method]p\
 ollable.block\x01\x03\x01p\x01\x01py\x01@\x01\x02in\x04\0\x05\x04\0\x04poll\x01\x06\
-\x03\x01\x12wasi:io/poll@0.2.0\x05\0\x04\x01#component:wasm-runtime/wasm-runtime\
-\x04\0\x0b\x12\x01\0\x0cwasm-runtime\x03\0\0\0G\x09producers\x01\x0cprocessed-by\
-\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+\x03\x01\x12wasi:io/poll@0.2.0\x05\0\x02\x03\0\0\x08pollable\x01B\x0f\x02\x03\x02\
+\x01\x01\x04\0\x08pollable\x03\0\0\x01w\x04\0\x07instant\x03\0\x02\x01w\x04\0\x08\
+duration\x03\0\x04\x01@\0\0\x03\x04\0\x03now\x01\x06\x01@\0\0\x05\x04\0\x0aresol\
+ution\x01\x07\x01i\x01\x01@\x01\x04when\x03\0\x08\x04\0\x11subscribe-instant\x01\
+\x09\x01@\x01\x04when\x05\0\x08\x04\0\x12subscribe-duration\x01\x0a\x03\x01!wasi\
+:clocks/monotonic-clock@0.2.0\x05\x02\x04\x01#component:wasm-runtime/wasm-runtim\
+e\x04\0\x0b\x12\x01\0\x0cwasm-runtime\x03\0\0\0G\x09producers\x01\x0cprocessed-b\
+y\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

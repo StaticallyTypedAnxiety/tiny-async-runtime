@@ -24,8 +24,8 @@ pub struct Reactor {
 
 impl Reactor {
     //adds event to the queue
-    pub fn add_to_queue(&mut self, event_name: String, pollable: Pollable) {
-        self.events.push(event_name, pollable);
+    pub fn add_to_queue<T: Into<Pollable>>(&mut self, event_name: String, pollable: T) {
+        self.events.push(event_name, pollable.into());
     }
 
     //polls event queue to see if any of the events are readycar

@@ -3,4 +3,5 @@ package component:wasm-runtime;
 /// An example world for the component to target.
 world wasm-runtime {
     import wasi:io/poll@0.2.0;
+    import wasi:clocks/monotonic-clock@0.2.0;
 }
