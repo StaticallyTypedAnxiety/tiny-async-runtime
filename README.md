@@ -4,3 +4,4 @@
 - [x] single threaded
 - [x] Wasi Preview 2 Components support
 - [x] wasi:io support
+- [x] wasi:clock support
