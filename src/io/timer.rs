@@ -1,4 +1,4 @@
-use crate::bindings::wasi::{clocks::monotonic_clock::subscribe_duration, io::poll::Pollable};
+use crate::bindings::wasi::{clocks::monotonic_clock::{subscribe_duration, subscribe_instant}, io::poll::Pollable};
 #[derive(Debug)]
 pub struct Timer {
     pollable: Pollable,
@@ -10,6 +10,10 @@ impl Timer {
         Timer {
             pollable: subscribe_duration(duration.as_nanos() as u64),
         }
+    }
+
+    pub fn subscribe_instant(duration:std::time::Duration) -> Self{
+        Self { pollable: subscribe_instant(duration.as_nanos() as u64) }
     }
 }
 impl From<Timer> for Pollable {

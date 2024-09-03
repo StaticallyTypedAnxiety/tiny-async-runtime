@@ -8,7 +8,7 @@ impl Guest for Component {
     fn run_timer_example() {
         wasm_runtime::WasmRuntimeAsyncEngine::block_on(|mut reactor| async move {
             let mut add_to_reactor = |subscription_name: String, duration: Duration| {
-                reactor.add_to_queue(
+                reactor.register(
                     subscription_name,
                     wasm_runtime::io::Timer::subscribe_duration(duration),
                 );

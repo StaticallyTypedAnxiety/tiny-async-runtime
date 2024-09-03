@@ -24,7 +24,7 @@ pub struct Reactor {
 
 impl Reactor {
     //adds event to the queue
-    pub fn add_to_queue<T: Into<Pollable>>(&mut self, event_name: String, pollable: T) {
+    pub fn register<T: Into<Pollable>>(&mut self, event_name: String, pollable: T) {
         self.events.push(event_name, pollable.into());
     }
 
