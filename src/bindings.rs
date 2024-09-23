@@ -274,6 +274,3463 @@ pub mod wasi {
                 }
             }
         }
+
+        #[allow(dead_code, clippy::all)]
+        pub mod error {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            /// A resource which represents some error information.
+            ///
+            /// The only method provided by this resource is `to-debug-string`,
+            /// which provides some human-readable information about the error.
+            ///
+            /// In the `wasi:io` package, this resource is returned through the
+            /// `wasi:io/streams/stream-error` type.
+            ///
+            /// To provide more specific error information, other interfaces may
+            /// provide functions to further "downcast" this error into more specific
+            /// error information. For example, `error`s returned in streams derived
+            /// from filesystem types to be described using the filesystem's own
+            /// error-code type, using the function
+            /// `wasi:filesystem/types/filesystem-error-code`, which takes a parameter
+            /// `borrow<error>` and returns
+            /// `option<wasi:filesystem/types/error-code>`.
+            ///
+            /// The set of functions which can "downcast" an `error` into a more
+            /// concrete type is open.
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Error {
+                handle: _rt::Resource<Error>,
+            }
+
+            impl Error {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Error {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wasi:io/error@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]error"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            impl Error {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Returns a string that is suitable to assist humans in debugging
+                /// this error.
+                ///
+                /// WARNING: The returned string should not be consumed mechanically!
+                /// It may change across platforms, hosts, or other implementation
+                /// details. Parsing this string is a major platform-compatibility
+                /// hazard.
+                pub fn to_debug_string(&self) -> _rt::String {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:io/error@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]error.to-debug-string"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = *ptr0.add(0).cast::<*mut u8>();
+                        let l2 = *ptr0.add(4).cast::<usize>();
+                        let len3 = l2;
+                        let bytes3 = _rt::Vec::from_raw_parts(l1.cast(), len3, len3);
+                        _rt::string_lift(bytes3)
+                    }
+                }
+            }
+        }
+
+        #[allow(dead_code, clippy::all)]
+        pub mod streams {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            pub type Error = super::super::super::wasi::io::error::Error;
+            pub type Pollable = super::super::super::wasi::io::poll::Pollable;
+            /// An error for input-stream and output-stream operations.
+            pub enum StreamError {
+                /// The last operation (a write or flush) failed before completion.
+                ///
+                /// More information is available in the `error` payload.
+                LastOperationFailed(Error),
+                /// The stream is closed: no more input will be accepted by the
+                /// stream. A closed output-stream will return this error on all
+                /// future operations.
+                Closed,
+            }
+            impl ::core::fmt::Debug for StreamError {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        StreamError::LastOperationFailed(e) => f
+                            .debug_tuple("StreamError::LastOperationFailed")
+                            .field(e)
+                            .finish(),
+                        StreamError::Closed => f.debug_tuple("StreamError::Closed").finish(),
+                    }
+                }
+            }
+            impl ::core::fmt::Display for StreamError {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    write!(f, "{:?}", self)
+                }
+            }
+
+            impl std::error::Error for StreamError {}
+            /// An input bytestream.
+            ///
+            /// `input-stream`s are *non-blocking* to the extent practical on underlying
+            /// platforms. I/O operations always return promptly; if fewer bytes are
+            /// promptly available than requested, they return the number of bytes promptly
+            /// available, which could even be zero. To wait for data to be available,
+            /// use the `subscribe` function to obtain a `pollable` which can be polled
+            /// for using `wasi:io/poll`.
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct InputStream {
+                handle: _rt::Resource<InputStream>,
+            }
+
+            impl InputStream {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for InputStream {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wasi:io/streams@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]input-stream"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            /// An output bytestream.
+            ///
+            /// `output-stream`s are *non-blocking* to the extent practical on
+            /// underlying platforms. Except where specified otherwise, I/O operations also
+            /// always return promptly, after the number of bytes that can be written
+            /// promptly, which could even be zero. To wait for the stream to be ready to
+            /// accept data, the `subscribe` function to obtain a `pollable` which can be
+            /// polled for using `wasi:io/poll`.
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct OutputStream {
+                handle: _rt::Resource<OutputStream>,
+            }
+
+            impl OutputStream {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for OutputStream {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wasi:io/streams@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]output-stream"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            impl InputStream {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Perform a non-blocking read from the stream.
+                ///
+                /// When the source of a `read` is binary data, the bytes from the source
+                /// are returned verbatim. When the source of a `read` is known to the
+                /// implementation to be text, bytes containing the UTF-8 encoding of the
+                /// text are returned.
+                ///
+                /// This function returns a list of bytes containing the read data,
+                /// when successful. The returned list will contain up to `len` bytes;
+                /// it may return fewer than requested, but not more. The list is
+                /// empty when no bytes are available for reading at this time. The
+                /// pollable given by `subscribe` will be ready when more bytes are
+                /// available.
+                ///
+                /// This function fails with a `stream-error` when the operation
+                /// encounters an error, giving `last-operation-failed`, or when the
+                /// stream is closed, giving `closed`.
+                ///
+                /// When the caller gives a `len` of 0, it represents a request to
+                /// read 0 bytes. If the stream is still open, this call should
+                /// succeed and return an empty list, or otherwise fail with `closed`.
+                ///
+                /// The `len` parameter is a `u64`, which could represent a list of u8 which
+                /// is not possible to allocate in wasm32, or not desirable to allocate as
+                /// as a return value by the callee. The callee may return a list of bytes
+                /// less than `len` in size while more bytes are available for reading.
+                pub fn read(&self, len: u64) -> Result<_rt::Vec<u8>, StreamError> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:io/streams@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]input-stream.read"]
+                            fn wit_import(_: i32, _: i64, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i64, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i64(&len), ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<*mut u8>();
+                                    let l3 = *ptr0.add(8).cast::<usize>();
+                                    let len4 = l3;
+
+                                    _rt::Vec::from_raw_parts(l2.cast(), len4, len4)
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l5 = i32::from(*ptr0.add(4).cast::<u8>());
+                                    let v7 = match l5 {
+                                        0 => {
+                                            let e7 = {
+                                                let l6 = *ptr0.add(8).cast::<i32>();
+
+                                                super::super::super::wasi::io::error::Error::from_handle(l6 as u32)
+                                            };
+                                            StreamError::LastOperationFailed(e7)
+                                        }
+                                        n => {
+                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                            StreamError::Closed
+                                        }
+                                    };
+
+                                    v7
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl InputStream {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Read bytes from a stream, after blocking until at least one byte can
+                /// be read. Except for blocking, behavior is identical to `read`.
+                pub fn blocking_read(&self, len: u64) -> Result<_rt::Vec<u8>, StreamError> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:io/streams@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]input-stream.blocking-read"]
+                            fn wit_import(_: i32, _: i64, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i64, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i64(&len), ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<*mut u8>();
+                                    let l3 = *ptr0.add(8).cast::<usize>();
+                                    let len4 = l3;
+
+                                    _rt::Vec::from_raw_parts(l2.cast(), len4, len4)
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l5 = i32::from(*ptr0.add(4).cast::<u8>());
+                                    let v7 = match l5 {
+                                        0 => {
+                                            let e7 = {
+                                                let l6 = *ptr0.add(8).cast::<i32>();
+
+                                                super::super::super::wasi::io::error::Error::from_handle(l6 as u32)
+                                            };
+                                            StreamError::LastOperationFailed(e7)
+                                        }
+                                        n => {
+                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                            StreamError::Closed
+                                        }
+                                    };
+
+                                    v7
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl InputStream {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Skip bytes from a stream. Returns number of bytes skipped.
+                ///
+                /// Behaves identical to `read`, except instead of returning a list
+                /// of bytes, returns the number of bytes consumed from the stream.
+                pub fn skip(&self, len: u64) -> Result<u64, StreamError> {
+                    unsafe {
+                        #[repr(align(8))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:io/streams@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]input-stream.skip"]
+                            fn wit_import(_: i32, _: i64, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i64, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i64(&len), ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = {
+                                    let l2 = *ptr0.add(8).cast::<i64>();
+
+                                    l2 as u64
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l3 = i32::from(*ptr0.add(8).cast::<u8>());
+                                    let v5 = match l3 {
+                                        0 => {
+                                            let e5 = {
+                                                let l4 = *ptr0.add(12).cast::<i32>();
+
+                                                super::super::super::wasi::io::error::Error::from_handle(l4 as u32)
+                                            };
+                                            StreamError::LastOperationFailed(e5)
+                                        }
+                                        n => {
+                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                            StreamError::Closed
+                                        }
+                                    };
+
+                                    v5
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl InputStream {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Skip bytes from a stream, after blocking until at least one byte
+                /// can be skipped. Except for blocking behavior, identical to `skip`.
+                pub fn blocking_skip(&self, len: u64) -> Result<u64, StreamError> {
+                    unsafe {
+                        #[repr(align(8))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:io/streams@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]input-stream.blocking-skip"]
+                            fn wit_import(_: i32, _: i64, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i64, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i64(&len), ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = {
+                                    let l2 = *ptr0.add(8).cast::<i64>();
+
+                                    l2 as u64
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l3 = i32::from(*ptr0.add(8).cast::<u8>());
+                                    let v5 = match l3 {
+                                        0 => {
+                                            let e5 = {
+                                                let l4 = *ptr0.add(12).cast::<i32>();
+
+                                                super::super::super::wasi::io::error::Error::from_handle(l4 as u32)
+                                            };
+                                            StreamError::LastOperationFailed(e5)
+                                        }
+                                        n => {
+                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                            StreamError::Closed
+                                        }
+                                    };
+
+                                    v5
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl InputStream {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Create a `pollable` which will resolve once either the specified stream
+                /// has bytes available to read or the other end of the stream has been
+                /// closed.
+                /// The created `pollable` is a child resource of the `input-stream`.
+                /// Implementations may trap if the `input-stream` is dropped before
+                /// all derived `pollable`s created with this function are dropped.
+                pub fn subscribe(&self) -> Pollable {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:io/streams@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]input-stream.subscribe"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wasi::io::poll::Pollable::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl OutputStream {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Check readiness for writing. This function never blocks.
+                ///
+                /// Returns the number of bytes permitted for the next call to `write`,
+                /// or an error. Calling `write` with more bytes than this function has
+                /// permitted will trap.
+                ///
+                /// When this function returns 0 bytes, the `subscribe` pollable will
+                /// become ready when this function will report at least 1 byte, or an
+                /// error.
+                pub fn check_write(&self) -> Result<u64, StreamError> {
+                    unsafe {
+                        #[repr(align(8))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:io/streams@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]output-stream.check-write"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = {
+                                    let l2 = *ptr0.add(8).cast::<i64>();
+
+                                    l2 as u64
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l3 = i32::from(*ptr0.add(8).cast::<u8>());
+                                    let v5 = match l3 {
+                                        0 => {
+                                            let e5 = {
+                                                let l4 = *ptr0.add(12).cast::<i32>();
+
+                                                super::super::super::wasi::io::error::Error::from_handle(l4 as u32)
+                                            };
+                                            StreamError::LastOperationFailed(e5)
+                                        }
+                                        n => {
+                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                            StreamError::Closed
+                                        }
+                                    };
+
+                                    v5
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl OutputStream {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Perform a write. This function never blocks.
+                ///
+                /// When the destination of a `write` is binary data, the bytes from
+                /// `contents` are written verbatim. When the destination of a `write` is
+                /// known to the implementation to be text, the bytes of `contents` are
+                /// transcoded from UTF-8 into the encoding of the destination and then
+                /// written.
+                ///
+                /// Precondition: check-write gave permit of Ok(n) and contents has a
+                /// length of less than or equal to n. Otherwise, this function will trap.
+                ///
+                /// returns Err(closed) without writing if the stream has closed since
+                /// the last call to check-write provided a permit.
+                pub fn write(&self, contents: &[u8]) -> Result<(), StreamError> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                        let vec0 = contents;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+                        let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:io/streams@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]output-stream.write"]
+                            fn wit_import(_: i32, _: *mut u8, _: usize, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8, _: usize, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0.cast_mut(), len0, ptr1);
+                        let l2 = i32::from(*ptr1.add(0).cast::<u8>());
+                        match l2 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l3 = i32::from(*ptr1.add(4).cast::<u8>());
+                                    let v5 = match l3 {
+                                        0 => {
+                                            let e5 = {
+                                                let l4 = *ptr1.add(8).cast::<i32>();
+
+                                                super::super::super::wasi::io::error::Error::from_handle(l4 as u32)
+                                            };
+                                            StreamError::LastOperationFailed(e5)
+                                        }
+                                        n => {
+                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                            StreamError::Closed
+                                        }
+                                    };
+
+                                    v5
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl OutputStream {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Perform a write of up to 4096 bytes, and then flush the stream. Block
+                /// until all of these operations are complete, or an error occurs.
+                ///
+                /// This is a convenience wrapper around the use of `check-write`,
+                /// `subscribe`, `write`, and `flush`, and is implemented with the
+                /// following pseudo-code:
+                ///
+                /// ```text
+                /// let pollable = this.subscribe();
+                /// while !contents.is_empty() {
+                /// // Wait for the stream to become writable
+                /// pollable.block();
+                /// let Ok(n) = this.check-write(); // eliding error handling
+                /// let len = min(n, contents.len());
+                /// let (chunk, rest) = contents.split_at(len);
+                /// this.write(chunk  );            // eliding error handling
+                /// contents = rest;
+                /// }
+                /// this.flush();
+                /// // Wait for completion of `flush`
+                /// pollable.block();
+                /// // Check for any errors that arose during `flush`
+                /// let _ = this.check-write();         // eliding error handling
+                /// ```
+                pub fn blocking_write_and_flush(&self, contents: &[u8]) -> Result<(), StreamError> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                        let vec0 = contents;
+                        let ptr0 = vec0.as_ptr().cast::<u8>();
+                        let len0 = vec0.len();
+                        let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:io/streams@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]output-stream.blocking-write-and-flush"]
+                            fn wit_import(_: i32, _: *mut u8, _: usize, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8, _: usize, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0.cast_mut(), len0, ptr1);
+                        let l2 = i32::from(*ptr1.add(0).cast::<u8>());
+                        match l2 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l3 = i32::from(*ptr1.add(4).cast::<u8>());
+                                    let v5 = match l3 {
+                                        0 => {
+                                            let e5 = {
+                                                let l4 = *ptr1.add(8).cast::<i32>();
+
+                                                super::super::super::wasi::io::error::Error::from_handle(l4 as u32)
+                                            };
+                                            StreamError::LastOperationFailed(e5)
+                                        }
+                                        n => {
+                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                            StreamError::Closed
+                                        }
+                                    };
+
+                                    v5
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl OutputStream {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Request to flush buffered output. This function never blocks.
+                ///
+                /// This tells the output-stream that the caller intends any buffered
+                /// output to be flushed. the output which is expected to be flushed
+                /// is all that has been passed to `write` prior to this call.
+                ///
+                /// Upon calling this function, the `output-stream` will not accept any
+                /// writes (`check-write` will return `ok(0)`) until the flush has
+                /// completed. The `subscribe` pollable will become ready when the
+                /// flush has completed and the stream can accept more writes.
+                pub fn flush(&self) -> Result<(), StreamError> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:io/streams@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]output-stream.flush"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(4).cast::<u8>());
+                                    let v4 = match l2 {
+                                        0 => {
+                                            let e4 = {
+                                                let l3 = *ptr0.add(8).cast::<i32>();
+
+                                                super::super::super::wasi::io::error::Error::from_handle(l3 as u32)
+                                            };
+                                            StreamError::LastOperationFailed(e4)
+                                        }
+                                        n => {
+                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                            StreamError::Closed
+                                        }
+                                    };
+
+                                    v4
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl OutputStream {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Request to flush buffered output, and block until flush completes
+                /// and stream is ready for writing again.
+                pub fn blocking_flush(&self) -> Result<(), StreamError> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:io/streams@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]output-stream.blocking-flush"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(4).cast::<u8>());
+                                    let v4 = match l2 {
+                                        0 => {
+                                            let e4 = {
+                                                let l3 = *ptr0.add(8).cast::<i32>();
+
+                                                super::super::super::wasi::io::error::Error::from_handle(l3 as u32)
+                                            };
+                                            StreamError::LastOperationFailed(e4)
+                                        }
+                                        n => {
+                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                            StreamError::Closed
+                                        }
+                                    };
+
+                                    v4
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl OutputStream {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Create a `pollable` which will resolve once the output-stream
+                /// is ready for more writing, or an error has occured. When this
+                /// pollable is ready, `check-write` will return `ok(n)` with n>0, or an
+                /// error.
+                ///
+                /// If the stream is closed, this pollable is always ready immediately.
+                ///
+                /// The created `pollable` is a child resource of the `output-stream`.
+                /// Implementations may trap if the `output-stream` is dropped before
+                /// all derived `pollable`s created with this function are dropped.
+                pub fn subscribe(&self) -> Pollable {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:io/streams@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]output-stream.subscribe"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wasi::io::poll::Pollable::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl OutputStream {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Write zeroes to a stream.
+                ///
+                /// This should be used precisely like `write` with the exact same
+                /// preconditions (must use check-write first), but instead of
+                /// passing a list of bytes, you simply pass the number of zero-bytes
+                /// that should be written.
+                pub fn write_zeroes(&self, len: u64) -> Result<(), StreamError> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:io/streams@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]output-stream.write-zeroes"]
+                            fn wit_import(_: i32, _: i64, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i64, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i64(&len), ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(4).cast::<u8>());
+                                    let v4 = match l2 {
+                                        0 => {
+                                            let e4 = {
+                                                let l3 = *ptr0.add(8).cast::<i32>();
+
+                                                super::super::super::wasi::io::error::Error::from_handle(l3 as u32)
+                                            };
+                                            StreamError::LastOperationFailed(e4)
+                                        }
+                                        n => {
+                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                            StreamError::Closed
+                                        }
+                                    };
+
+                                    v4
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl OutputStream {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Perform a write of up to 4096 zeroes, and then flush the stream.
+                /// Block until all of these operations are complete, or an error
+                /// occurs.
+                ///
+                /// This is a convenience wrapper around the use of `check-write`,
+                /// `subscribe`, `write-zeroes`, and `flush`, and is implemented with
+                /// the following pseudo-code:
+                ///
+                /// ```text
+                /// let pollable = this.subscribe();
+                /// while num_zeroes != 0 {
+                /// // Wait for the stream to become writable
+                /// pollable.block();
+                /// let Ok(n) = this.check-write(); // eliding error handling
+                /// let len = min(n, num_zeroes);
+                /// this.write-zeroes(len);         // eliding error handling
+                /// num_zeroes -= len;
+                /// }
+                /// this.flush();
+                /// // Wait for completion of `flush`
+                /// pollable.block();
+                /// // Check for any errors that arose during `flush`
+                /// let _ = this.check-write();         // eliding error handling
+                /// ```
+                pub fn blocking_write_zeroes_and_flush(&self, len: u64) -> Result<(), StreamError> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:io/streams@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]output-stream.blocking-write-zeroes-and-flush"]
+                            fn wit_import(_: i32, _: i64, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i64, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i64(&len), ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(4).cast::<u8>());
+                                    let v4 = match l2 {
+                                        0 => {
+                                            let e4 = {
+                                                let l3 = *ptr0.add(8).cast::<i32>();
+
+                                                super::super::super::wasi::io::error::Error::from_handle(l3 as u32)
+                                            };
+                                            StreamError::LastOperationFailed(e4)
+                                        }
+                                        n => {
+                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                            StreamError::Closed
+                                        }
+                                    };
+
+                                    v4
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl OutputStream {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Read from one stream and write to another.
+                ///
+                /// The behavior of splice is equivelant to:
+                /// 1. calling `check-write` on the `output-stream`
+                /// 2. calling `read` on the `input-stream` with the smaller of the
+                /// `check-write` permitted length and the `len` provided to `splice`
+                /// 3. calling `write` on the `output-stream` with that read data.
+                ///
+                /// Any error reported by the call to `check-write`, `read`, or
+                /// `write` ends the splice and reports that error.
+                ///
+                /// This function returns the number of bytes transferred; it may be less
+                /// than `len`.
+                pub fn splice(&self, src: &InputStream, len: u64) -> Result<u64, StreamError> {
+                    unsafe {
+                        #[repr(align(8))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:io/streams@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]output-stream.splice"]
+                            fn wit_import(_: i32, _: i32, _: i64, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32, _: i64, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            (src).handle() as i32,
+                            _rt::as_i64(&len),
+                            ptr0,
+                        );
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = {
+                                    let l2 = *ptr0.add(8).cast::<i64>();
+
+                                    l2 as u64
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l3 = i32::from(*ptr0.add(8).cast::<u8>());
+                                    let v5 = match l3 {
+                                        0 => {
+                                            let e5 = {
+                                                let l4 = *ptr0.add(12).cast::<i32>();
+
+                                                super::super::super::wasi::io::error::Error::from_handle(l4 as u32)
+                                            };
+                                            StreamError::LastOperationFailed(e5)
+                                        }
+                                        n => {
+                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                            StreamError::Closed
+                                        }
+                                    };
+
+                                    v5
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl OutputStream {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Read from one stream and write to another, with blocking.
+                ///
+                /// This is similar to `splice`, except that it blocks until the
+                /// `output-stream` is ready for writing, and the `input-stream`
+                /// is ready for reading, before performing the `splice`.
+                pub fn blocking_splice(
+                    &self,
+                    src: &InputStream,
+                    len: u64,
+                ) -> Result<u64, StreamError> {
+                    unsafe {
+                        #[repr(align(8))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:io/streams@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]output-stream.blocking-splice"]
+                            fn wit_import(_: i32, _: i32, _: i64, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32, _: i64, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            (src).handle() as i32,
+                            _rt::as_i64(&len),
+                            ptr0,
+                        );
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = {
+                                    let l2 = *ptr0.add(8).cast::<i64>();
+
+                                    l2 as u64
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l3 = i32::from(*ptr0.add(8).cast::<u8>());
+                                    let v5 = match l3 {
+                                        0 => {
+                                            let e5 = {
+                                                let l4 = *ptr0.add(12).cast::<i32>();
+
+                                                super::super::super::wasi::io::error::Error::from_handle(l4 as u32)
+                                            };
+                                            StreamError::LastOperationFailed(e5)
+                                        }
+                                        n => {
+                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                            StreamError::Closed
+                                        }
+                                    };
+
+                                    v5
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+        }
+    }
+    #[allow(dead_code)]
+    pub mod sockets {
+        #[allow(dead_code, clippy::all)]
+        pub mod network {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            /// An opaque resource that represents access to (a subset of) the network.
+            /// This enables context-based security for networking.
+            /// There is no need for this to map 1:1 to a physical network interface.
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct Network {
+                handle: _rt::Resource<Network>,
+            }
+
+            impl Network {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for Network {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wasi:sockets/network@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]network"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            /// Error codes.
+            ///
+            /// In theory, every API can return any error code.
+            /// In practice, API's typically only return the errors documented per API
+            /// combined with a couple of errors that are always possible:
+            /// - `unknown`
+            /// - `access-denied`
+            /// - `not-supported`
+            /// - `out-of-memory`
+            /// - `concurrency-conflict`
+            ///
+            /// See each individual API for what the POSIX equivalents are. They sometimes differ per API.
+            #[repr(u8)]
+            #[derive(Clone, Copy, Eq, PartialEq)]
+            pub enum ErrorCode {
+                /// Unknown error
+                Unknown,
+                /// Access denied.
+                ///
+                /// POSIX equivalent: EACCES, EPERM
+                AccessDenied,
+                /// The operation is not supported.
+                ///
+                /// POSIX equivalent: EOPNOTSUPP
+                NotSupported,
+                /// One of the arguments is invalid.
+                ///
+                /// POSIX equivalent: EINVAL
+                InvalidArgument,
+                /// Not enough memory to complete the operation.
+                ///
+                /// POSIX equivalent: ENOMEM, ENOBUFS, EAI_MEMORY
+                OutOfMemory,
+                /// The operation timed out before it could finish completely.
+                Timeout,
+                /// This operation is incompatible with another asynchronous operation that is already in progress.
+                ///
+                /// POSIX equivalent: EALREADY
+                ConcurrencyConflict,
+                /// Trying to finish an asynchronous operation that:
+                /// - has not been started yet, or:
+                /// - was already finished by a previous `finish-*` call.
+                ///
+                /// Note: this is scheduled to be removed when `future`s are natively supported.
+                NotInProgress,
+                /// The operation has been aborted because it could not be completed immediately.
+                ///
+                /// Note: this is scheduled to be removed when `future`s are natively supported.
+                WouldBlock,
+                /// The operation is not valid in the socket's current state.
+                InvalidState,
+                /// A new socket resource could not be created because of a system limit.
+                NewSocketLimit,
+                /// A bind operation failed because the provided address is not an address that the `network` can bind to.
+                AddressNotBindable,
+                /// A bind operation failed because the provided address is already in use or because there are no ephemeral ports available.
+                AddressInUse,
+                /// The remote address is not reachable
+                RemoteUnreachable,
+                /// The TCP connection was forcefully rejected
+                ConnectionRefused,
+                /// The TCP connection was reset.
+                ConnectionReset,
+                /// A TCP connection was aborted.
+                ConnectionAborted,
+                /// The size of a datagram sent to a UDP socket exceeded the maximum
+                /// supported size.
+                DatagramTooLarge,
+                /// Name does not exist or has no suitable associated IP addresses.
+                NameUnresolvable,
+                /// A temporary failure in name resolution occurred.
+                TemporaryResolverFailure,
+                /// A permanent failure in name resolution occurred.
+                PermanentResolverFailure,
+            }
+            impl ErrorCode {
+                pub fn name(&self) -> &'static str {
+                    match self {
+                        ErrorCode::Unknown => "unknown",
+                        ErrorCode::AccessDenied => "access-denied",
+                        ErrorCode::NotSupported => "not-supported",
+                        ErrorCode::InvalidArgument => "invalid-argument",
+                        ErrorCode::OutOfMemory => "out-of-memory",
+                        ErrorCode::Timeout => "timeout",
+                        ErrorCode::ConcurrencyConflict => "concurrency-conflict",
+                        ErrorCode::NotInProgress => "not-in-progress",
+                        ErrorCode::WouldBlock => "would-block",
+                        ErrorCode::InvalidState => "invalid-state",
+                        ErrorCode::NewSocketLimit => "new-socket-limit",
+                        ErrorCode::AddressNotBindable => "address-not-bindable",
+                        ErrorCode::AddressInUse => "address-in-use",
+                        ErrorCode::RemoteUnreachable => "remote-unreachable",
+                        ErrorCode::ConnectionRefused => "connection-refused",
+                        ErrorCode::ConnectionReset => "connection-reset",
+                        ErrorCode::ConnectionAborted => "connection-aborted",
+                        ErrorCode::DatagramTooLarge => "datagram-too-large",
+                        ErrorCode::NameUnresolvable => "name-unresolvable",
+                        ErrorCode::TemporaryResolverFailure => "temporary-resolver-failure",
+                        ErrorCode::PermanentResolverFailure => "permanent-resolver-failure",
+                    }
+                }
+                pub fn message(&self) -> &'static str {
+                    match self {
+            ErrorCode::Unknown => "Unknown error",
+            ErrorCode::AccessDenied => "Access denied.
+
+            POSIX equivalent: EACCES, EPERM",
+            ErrorCode::NotSupported => "The operation is not supported.
+
+            POSIX equivalent: EOPNOTSUPP",
+            ErrorCode::InvalidArgument => "One of the arguments is invalid.
+
+            POSIX equivalent: EINVAL",
+            ErrorCode::OutOfMemory => "Not enough memory to complete the operation.
+
+            POSIX equivalent: ENOMEM, ENOBUFS, EAI_MEMORY",
+            ErrorCode::Timeout => "The operation timed out before it could finish completely.",
+            ErrorCode::ConcurrencyConflict => "This operation is incompatible with another asynchronous operation that is already in progress.
+
+            POSIX equivalent: EALREADY",
+            ErrorCode::NotInProgress => "Trying to finish an asynchronous operation that:
+            - has not been started yet, or:
+            - was already finished by a previous `finish-*` call.
+
+            Note: this is scheduled to be removed when `future`s are natively supported.",
+            ErrorCode::WouldBlock => "The operation has been aborted because it could not be completed immediately.
+
+            Note: this is scheduled to be removed when `future`s are natively supported.",
+            ErrorCode::InvalidState => "The operation is not valid in the socket's current state.",
+            ErrorCode::NewSocketLimit => "A new socket resource could not be created because of a system limit.",
+            ErrorCode::AddressNotBindable => "A bind operation failed because the provided address is not an address that the `network` can bind to.",
+            ErrorCode::AddressInUse => "A bind operation failed because the provided address is already in use or because there are no ephemeral ports available.",
+            ErrorCode::RemoteUnreachable => "The remote address is not reachable",
+            ErrorCode::ConnectionRefused => "The TCP connection was forcefully rejected",
+            ErrorCode::ConnectionReset => "The TCP connection was reset.",
+            ErrorCode::ConnectionAborted => "A TCP connection was aborted.",
+            ErrorCode::DatagramTooLarge => "The size of a datagram sent to a UDP socket exceeded the maximum
+            supported size.",
+            ErrorCode::NameUnresolvable => "Name does not exist or has no suitable associated IP addresses.",
+            ErrorCode::TemporaryResolverFailure => "A temporary failure in name resolution occurred.",
+            ErrorCode::PermanentResolverFailure => "A permanent failure in name resolution occurred.",
+          }
+                }
+            }
+            impl ::core::fmt::Debug for ErrorCode {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("ErrorCode")
+                        .field("code", &(*self as i32))
+                        .field("name", &self.name())
+                        .field("message", &self.message())
+                        .finish()
+                }
+            }
+            impl ::core::fmt::Display for ErrorCode {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    write!(f, "{} (error {})", self.name(), *self as i32)
+                }
+            }
+
+            impl std::error::Error for ErrorCode {}
+
+            impl ErrorCode {
+                #[doc(hidden)]
+                pub unsafe fn _lift(val: u8) -> ErrorCode {
+                    if !cfg!(debug_assertions) {
+                        return ::core::mem::transmute(val);
+                    }
+
+                    match val {
+                        0 => ErrorCode::Unknown,
+                        1 => ErrorCode::AccessDenied,
+                        2 => ErrorCode::NotSupported,
+                        3 => ErrorCode::InvalidArgument,
+                        4 => ErrorCode::OutOfMemory,
+                        5 => ErrorCode::Timeout,
+                        6 => ErrorCode::ConcurrencyConflict,
+                        7 => ErrorCode::NotInProgress,
+                        8 => ErrorCode::WouldBlock,
+                        9 => ErrorCode::InvalidState,
+                        10 => ErrorCode::NewSocketLimit,
+                        11 => ErrorCode::AddressNotBindable,
+                        12 => ErrorCode::AddressInUse,
+                        13 => ErrorCode::RemoteUnreachable,
+                        14 => ErrorCode::ConnectionRefused,
+                        15 => ErrorCode::ConnectionReset,
+                        16 => ErrorCode::ConnectionAborted,
+                        17 => ErrorCode::DatagramTooLarge,
+                        18 => ErrorCode::NameUnresolvable,
+                        19 => ErrorCode::TemporaryResolverFailure,
+                        20 => ErrorCode::PermanentResolverFailure,
+
+                        _ => panic!("invalid enum discriminant"),
+                    }
+                }
+            }
+
+            #[repr(u8)]
+            #[derive(Clone, Copy, Eq, PartialEq)]
+            pub enum IpAddressFamily {
+                /// Similar to `AF_INET` in POSIX.
+                Ipv4,
+                /// Similar to `AF_INET6` in POSIX.
+                Ipv6,
+            }
+            impl ::core::fmt::Debug for IpAddressFamily {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        IpAddressFamily::Ipv4 => f.debug_tuple("IpAddressFamily::Ipv4").finish(),
+                        IpAddressFamily::Ipv6 => f.debug_tuple("IpAddressFamily::Ipv6").finish(),
+                    }
+                }
+            }
+
+            impl IpAddressFamily {
+                #[doc(hidden)]
+                pub unsafe fn _lift(val: u8) -> IpAddressFamily {
+                    if !cfg!(debug_assertions) {
+                        return ::core::mem::transmute(val);
+                    }
+
+                    match val {
+                        0 => IpAddressFamily::Ipv4,
+                        1 => IpAddressFamily::Ipv6,
+
+                        _ => panic!("invalid enum discriminant"),
+                    }
+                }
+            }
+
+            pub type Ipv4Address = (u8, u8, u8, u8);
+            pub type Ipv6Address = (u16, u16, u16, u16, u16, u16, u16, u16);
+            #[derive(Clone, Copy)]
+            pub enum IpAddress {
+                Ipv4(Ipv4Address),
+                Ipv6(Ipv6Address),
+            }
+            impl ::core::fmt::Debug for IpAddress {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        IpAddress::Ipv4(e) => f.debug_tuple("IpAddress::Ipv4").field(e).finish(),
+                        IpAddress::Ipv6(e) => f.debug_tuple("IpAddress::Ipv6").field(e).finish(),
+                    }
+                }
+            }
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct Ipv4SocketAddress {
+                /// sin_port
+                pub port: u16,
+                /// sin_addr
+                pub address: Ipv4Address,
+            }
+            impl ::core::fmt::Debug for Ipv4SocketAddress {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Ipv4SocketAddress")
+                        .field("port", &self.port)
+                        .field("address", &self.address)
+                        .finish()
+                }
+            }
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct Ipv6SocketAddress {
+                /// sin6_port
+                pub port: u16,
+                /// sin6_flowinfo
+                pub flow_info: u32,
+                /// sin6_addr
+                pub address: Ipv6Address,
+                /// sin6_scope_id
+                pub scope_id: u32,
+            }
+            impl ::core::fmt::Debug for Ipv6SocketAddress {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Ipv6SocketAddress")
+                        .field("port", &self.port)
+                        .field("flow-info", &self.flow_info)
+                        .field("address", &self.address)
+                        .field("scope-id", &self.scope_id)
+                        .finish()
+                }
+            }
+            #[derive(Clone, Copy)]
+            pub enum IpSocketAddress {
+                Ipv4(Ipv4SocketAddress),
+                Ipv6(Ipv6SocketAddress),
+            }
+            impl ::core::fmt::Debug for IpSocketAddress {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        IpSocketAddress::Ipv4(e) => {
+                            f.debug_tuple("IpSocketAddress::Ipv4").field(e).finish()
+                        }
+                        IpSocketAddress::Ipv6(e) => {
+                            f.debug_tuple("IpSocketAddress::Ipv6").field(e).finish()
+                        }
+                    }
+                }
+            }
+        }
+
+        #[allow(dead_code, clippy::all)]
+        pub mod tcp {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            pub type InputStream = super::super::super::wasi::io::streams::InputStream;
+            pub type OutputStream = super::super::super::wasi::io::streams::OutputStream;
+            pub type Pollable = super::super::super::wasi::io::poll::Pollable;
+            pub type Duration = super::super::super::wasi::clocks::monotonic_clock::Duration;
+            pub type Network = super::super::super::wasi::sockets::network::Network;
+            pub type ErrorCode = super::super::super::wasi::sockets::network::ErrorCode;
+            pub type IpSocketAddress = super::super::super::wasi::sockets::network::IpSocketAddress;
+            pub type IpAddressFamily = super::super::super::wasi::sockets::network::IpAddressFamily;
+            #[repr(u8)]
+            #[derive(Clone, Copy, Eq, PartialEq)]
+            pub enum ShutdownType {
+                /// Similar to `SHUT_RD` in POSIX.
+                Receive,
+                /// Similar to `SHUT_WR` in POSIX.
+                Send,
+                /// Similar to `SHUT_RDWR` in POSIX.
+                Both,
+            }
+            impl ::core::fmt::Debug for ShutdownType {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    match self {
+                        ShutdownType::Receive => f.debug_tuple("ShutdownType::Receive").finish(),
+                        ShutdownType::Send => f.debug_tuple("ShutdownType::Send").finish(),
+                        ShutdownType::Both => f.debug_tuple("ShutdownType::Both").finish(),
+                    }
+                }
+            }
+
+            impl ShutdownType {
+                #[doc(hidden)]
+                pub unsafe fn _lift(val: u8) -> ShutdownType {
+                    if !cfg!(debug_assertions) {
+                        return ::core::mem::transmute(val);
+                    }
+
+                    match val {
+                        0 => ShutdownType::Receive,
+                        1 => ShutdownType::Send,
+                        2 => ShutdownType::Both,
+
+                        _ => panic!("invalid enum discriminant"),
+                    }
+                }
+            }
+
+            /// A TCP socket resource.
+            ///
+            /// The socket can be in one of the following states:
+            /// - `unbound`
+            /// - `bind-in-progress`
+            /// - `bound` (See note below)
+            /// - `listen-in-progress`
+            /// - `listening`
+            /// - `connect-in-progress`
+            /// - `connected`
+            /// - `closed`
+            /// See <https://github.com/WebAssembly/wasi-sockets/TcpSocketOperationalSemantics.md>
+            /// for a more information.
+            ///
+            /// Note: Except where explicitly mentioned, whenever this documentation uses
+            /// the term "bound" without backticks it actually means: in the `bound` state *or higher*.
+            /// (i.e. `bound`, `listen-in-progress`, `listening`, `connect-in-progress` or `connected`)
+            ///
+            /// In addition to the general error codes documented on the
+            /// `network::error-code` type, TCP socket methods may always return
+            /// `error(invalid-state)` when in the `closed` state.
+
+            #[derive(Debug)]
+            #[repr(transparent)]
+            pub struct TcpSocket {
+                handle: _rt::Resource<TcpSocket>,
+            }
+
+            impl TcpSocket {
+                #[doc(hidden)]
+                pub unsafe fn from_handle(handle: u32) -> Self {
+                    Self {
+                        handle: _rt::Resource::from_handle(handle),
+                    }
+                }
+
+                #[doc(hidden)]
+                pub fn take_handle(&self) -> u32 {
+                    _rt::Resource::take_handle(&self.handle)
+                }
+
+                #[doc(hidden)]
+                pub fn handle(&self) -> u32 {
+                    _rt::Resource::handle(&self.handle)
+                }
+            }
+
+            unsafe impl _rt::WasmResource for TcpSocket {
+                #[inline]
+                unsafe fn drop(_handle: u32) {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unreachable!();
+
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[resource-drop]tcp-socket"]
+                            fn drop(_: u32);
+                        }
+
+                        drop(_handle);
+                    }
+                }
+            }
+
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Bind the socket to a specific network on the provided IP address and port.
+                ///
+                /// If the IP address is zero (`0.0.0.0` in IPv4, `::` in IPv6), it is left to the implementation to decide which
+                /// network interface(s) to bind to.
+                /// If the TCP/UDP port is zero, the socket will be bound to a random free port.
+                ///
+                /// Bind can be attempted multiple times on the same socket, even with
+                /// different arguments on each iteration. But never concurrently and
+                /// only as long as the previous bind failed. Once a bind succeeds, the
+                /// binding can't be changed anymore.
+                ///
+                /// # Typical errors
+                /// - `invalid-argument`:          The `local-address` has the wrong address family. (EAFNOSUPPORT, EFAULT on Windows)
+                /// - `invalid-argument`:          `local-address` is not a unicast address. (EINVAL)
+                /// - `invalid-argument`:          `local-address` is an IPv4-mapped IPv6 address. (EINVAL)
+                /// - `invalid-state`:             The socket is already bound. (EINVAL)
+                /// - `address-in-use`:            No ephemeral ports available. (EADDRINUSE, ENOBUFS on Windows)
+                /// - `address-in-use`:            Address is already in use. (EADDRINUSE)
+                /// - `address-not-bindable`:      `local-address` is not an address that the `network` can bind to. (EADDRNOTAVAIL)
+                /// - `not-in-progress`:           A `bind` operation is not in progress.
+                /// - `would-block`:               Can't finish the operation, it is still in progress. (EWOULDBLOCK, EAGAIN)
+                ///
+                /// # Implementors note
+                /// When binding to a non-zero port, this bind operation shouldn't be affected by the TIME_WAIT
+                /// state of a recently closed socket on the same local address. In practice this means that the SO_REUSEADDR
+                /// socket option should be set implicitly on all platforms, except on Windows where this is the default behavior
+                /// and SO_REUSEADDR performs something different entirely.
+                ///
+                /// Unlike in POSIX, in WASI the bind operation is async. This enables
+                /// interactive WASI hosts to inject permission prompts. Runtimes that
+                /// don't want to make use of this ability can simply call the native
+                /// `bind` as part of either `start-bind` or `finish-bind`.
+                ///
+                /// # References
+                /// - <https://pubs.opengroup.org/onlinepubs/9699919799/functions/bind.html>
+                /// - <https://man7.org/linux/man-pages/man2/bind.2.html>
+                /// - <https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-bind>
+                /// - <https://man.freebsd.org/cgi/man.cgi?query=bind&sektion=2&format=html>
+                pub fn start_bind(
+                    &self,
+                    network: &Network,
+                    local_address: IpSocketAddress,
+                ) -> Result<(), ErrorCode> {
+                    unsafe {
+                        #[repr(align(1))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 2]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+                        use super::super::super::wasi::sockets::network::IpSocketAddress as V4;
+                        let (
+                            result5_0,
+                            result5_1,
+                            result5_2,
+                            result5_3,
+                            result5_4,
+                            result5_5,
+                            result5_6,
+                            result5_7,
+                            result5_8,
+                            result5_9,
+                            result5_10,
+                            result5_11,
+                        ) = match local_address {
+                            V4::Ipv4(e) => {
+                                let super::super::super::wasi::sockets::network::Ipv4SocketAddress{ port:port0, address:address0, } = e;
+                                let (t1_0, t1_1, t1_2, t1_3) = address0;
+
+                                (
+                                    0i32,
+                                    _rt::as_i32(port0),
+                                    _rt::as_i32(t1_0),
+                                    _rt::as_i32(t1_1),
+                                    _rt::as_i32(t1_2),
+                                    _rt::as_i32(t1_3),
+                                    0i32,
+                                    0i32,
+                                    0i32,
+                                    0i32,
+                                    0i32,
+                                    0i32,
+                                )
+                            }
+                            V4::Ipv6(e) => {
+                                let super::super::super::wasi::sockets::network::Ipv6SocketAddress{ port:port2, flow_info:flow_info2, address:address2, scope_id:scope_id2, } = e;
+                                let (t3_0, t3_1, t3_2, t3_3, t3_4, t3_5, t3_6, t3_7) = address2;
+
+                                (
+                                    1i32,
+                                    _rt::as_i32(port2),
+                                    _rt::as_i32(flow_info2),
+                                    _rt::as_i32(t3_0),
+                                    _rt::as_i32(t3_1),
+                                    _rt::as_i32(t3_2),
+                                    _rt::as_i32(t3_3),
+                                    _rt::as_i32(t3_4),
+                                    _rt::as_i32(t3_5),
+                                    _rt::as_i32(t3_6),
+                                    _rt::as_i32(t3_7),
+                                    _rt::as_i32(scope_id2),
+                                )
+                            }
+                        };
+                        let ptr6 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.start-bind"]
+                            fn wit_import(
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: *mut u8,
+                            );
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: *mut u8,
+                        ) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            (network).handle() as i32,
+                            result5_0,
+                            result5_1,
+                            result5_2,
+                            result5_3,
+                            result5_4,
+                            result5_5,
+                            result5_6,
+                            result5_7,
+                            result5_8,
+                            result5_9,
+                            result5_10,
+                            result5_11,
+                            ptr6,
+                        );
+                        let l7 = i32::from(*ptr6.add(0).cast::<u8>());
+                        match l7 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l8 = i32::from(*ptr6.add(1).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l8 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn finish_bind(&self) -> Result<(), ErrorCode> {
+                    unsafe {
+                        #[repr(align(1))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 2]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.finish-bind"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l2 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Connect to a remote endpoint.
+                ///
+                /// On success:
+                /// - the socket is transitioned into the `connection` state.
+                /// - a pair of streams is returned that can be used to read & write to the connection
+                ///
+                /// After a failed connection attempt, the socket will be in the `closed`
+                /// state and the only valid action left is to `drop` the socket. A single
+                /// socket can not be used to connect more than once.
+                ///
+                /// # Typical errors
+                /// - `invalid-argument`:          The `remote-address` has the wrong address family. (EAFNOSUPPORT)
+                /// - `invalid-argument`:          `remote-address` is not a unicast address. (EINVAL, ENETUNREACH on Linux, EAFNOSUPPORT on MacOS)
+                /// - `invalid-argument`:          `remote-address` is an IPv4-mapped IPv6 address. (EINVAL, EADDRNOTAVAIL on Illumos)
+                /// - `invalid-argument`:          The IP address in `remote-address` is set to INADDR_ANY (`0.0.0.0` / `::`). (EADDRNOTAVAIL on Windows)
+                /// - `invalid-argument`:          The port in `remote-address` is set to 0. (EADDRNOTAVAIL on Windows)
+                /// - `invalid-argument`:          The socket is already attached to a different network. The `network` passed to `connect` must be identical to the one passed to `bind`.
+                /// - `invalid-state`:             The socket is already in the `connected` state. (EISCONN)
+                /// - `invalid-state`:             The socket is already in the `listening` state. (EOPNOTSUPP, EINVAL on Windows)
+                /// - `timeout`:                   Connection timed out. (ETIMEDOUT)
+                /// - `connection-refused`:        The connection was forcefully rejected. (ECONNREFUSED)
+                /// - `connection-reset`:          The connection was reset. (ECONNRESET)
+                /// - `connection-aborted`:        The connection was aborted. (ECONNABORTED)
+                /// - `remote-unreachable`:        The remote address is not reachable. (EHOSTUNREACH, EHOSTDOWN, ENETUNREACH, ENETDOWN, ENONET)
+                /// - `address-in-use`:            Tried to perform an implicit bind, but there were no ephemeral ports available. (EADDRINUSE, EADDRNOTAVAIL on Linux, EAGAIN on BSD)
+                /// - `not-in-progress`:           A connect operation is not in progress.
+                /// - `would-block`:               Can't finish the operation, it is still in progress. (EWOULDBLOCK, EAGAIN)
+                ///
+                /// # Implementors note
+                /// The POSIX equivalent of `start-connect` is the regular `connect` syscall.
+                /// Because all WASI sockets are non-blocking this is expected to return
+                /// EINPROGRESS, which should be translated to `ok()` in WASI.
+                ///
+                /// The POSIX equivalent of `finish-connect` is a `poll` for event `POLLOUT`
+                /// with a timeout of 0 on the socket descriptor. Followed by a check for
+                /// the `SO_ERROR` socket option, in case the poll signaled readiness.
+                ///
+                /// # References
+                /// - <https://pubs.opengroup.org/onlinepubs/9699919799/functions/connect.html>
+                /// - <https://man7.org/linux/man-pages/man2/connect.2.html>
+                /// - <https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-connect>
+                /// - <https://man.freebsd.org/cgi/man.cgi?connect>
+                pub fn start_connect(
+                    &self,
+                    network: &Network,
+                    remote_address: IpSocketAddress,
+                ) -> Result<(), ErrorCode> {
+                    unsafe {
+                        #[repr(align(1))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 2]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+                        use super::super::super::wasi::sockets::network::IpSocketAddress as V4;
+                        let (
+                            result5_0,
+                            result5_1,
+                            result5_2,
+                            result5_3,
+                            result5_4,
+                            result5_5,
+                            result5_6,
+                            result5_7,
+                            result5_8,
+                            result5_9,
+                            result5_10,
+                            result5_11,
+                        ) = match remote_address {
+                            V4::Ipv4(e) => {
+                                let super::super::super::wasi::sockets::network::Ipv4SocketAddress{ port:port0, address:address0, } = e;
+                                let (t1_0, t1_1, t1_2, t1_3) = address0;
+
+                                (
+                                    0i32,
+                                    _rt::as_i32(port0),
+                                    _rt::as_i32(t1_0),
+                                    _rt::as_i32(t1_1),
+                                    _rt::as_i32(t1_2),
+                                    _rt::as_i32(t1_3),
+                                    0i32,
+                                    0i32,
+                                    0i32,
+                                    0i32,
+                                    0i32,
+                                    0i32,
+                                )
+                            }
+                            V4::Ipv6(e) => {
+                                let super::super::super::wasi::sockets::network::Ipv6SocketAddress{ port:port2, flow_info:flow_info2, address:address2, scope_id:scope_id2, } = e;
+                                let (t3_0, t3_1, t3_2, t3_3, t3_4, t3_5, t3_6, t3_7) = address2;
+
+                                (
+                                    1i32,
+                                    _rt::as_i32(port2),
+                                    _rt::as_i32(flow_info2),
+                                    _rt::as_i32(t3_0),
+                                    _rt::as_i32(t3_1),
+                                    _rt::as_i32(t3_2),
+                                    _rt::as_i32(t3_3),
+                                    _rt::as_i32(t3_4),
+                                    _rt::as_i32(t3_5),
+                                    _rt::as_i32(t3_6),
+                                    _rt::as_i32(t3_7),
+                                    _rt::as_i32(scope_id2),
+                                )
+                            }
+                        };
+                        let ptr6 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.start-connect"]
+                            fn wit_import(
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: i32,
+                                _: *mut u8,
+                            );
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: i32,
+                            _: *mut u8,
+                        ) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            (network).handle() as i32,
+                            result5_0,
+                            result5_1,
+                            result5_2,
+                            result5_3,
+                            result5_4,
+                            result5_5,
+                            result5_6,
+                            result5_7,
+                            result5_8,
+                            result5_9,
+                            result5_10,
+                            result5_11,
+                            ptr6,
+                        );
+                        let l7 = i32::from(*ptr6.add(0).cast::<u8>());
+                        match l7 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l8 = i32::from(*ptr6.add(1).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l8 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn finish_connect(&self) -> Result<(InputStream, OutputStream), ErrorCode> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.finish-connect"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<i32>();
+                                    let l3 = *ptr0.add(8).cast::<i32>();
+
+                                    (super::super::super::wasi::io::streams::InputStream::from_handle(l2 as u32), super::super::super::wasi::io::streams::OutputStream::from_handle(l3 as u32))
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l4 = i32::from(*ptr0.add(4).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l4 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Start listening for new connections.
+                ///
+                /// Transitions the socket into the `listening` state.
+                ///
+                /// Unlike POSIX, the socket must already be explicitly bound.
+                ///
+                /// # Typical errors
+                /// - `invalid-state`:             The socket is not bound to any local address. (EDESTADDRREQ)
+                /// - `invalid-state`:             The socket is already in the `connected` state. (EISCONN, EINVAL on BSD)
+                /// - `invalid-state`:             The socket is already in the `listening` state.
+                /// - `address-in-use`:            Tried to perform an implicit bind, but there were no ephemeral ports available. (EADDRINUSE)
+                /// - `not-in-progress`:           A listen operation is not in progress.
+                /// - `would-block`:               Can't finish the operation, it is still in progress. (EWOULDBLOCK, EAGAIN)
+                ///
+                /// # Implementors note
+                /// Unlike in POSIX, in WASI the listen operation is async. This enables
+                /// interactive WASI hosts to inject permission prompts. Runtimes that
+                /// don't want to make use of this ability can simply call the native
+                /// `listen` as part of either `start-listen` or `finish-listen`.
+                ///
+                /// # References
+                /// - <https://pubs.opengroup.org/onlinepubs/9699919799/functions/listen.html>
+                /// - <https://man7.org/linux/man-pages/man2/listen.2.html>
+                /// - <https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-listen>
+                /// - <https://man.freebsd.org/cgi/man.cgi?query=listen&sektion=2>
+                pub fn start_listen(&self) -> Result<(), ErrorCode> {
+                    unsafe {
+                        #[repr(align(1))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 2]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.start-listen"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l2 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn finish_listen(&self) -> Result<(), ErrorCode> {
+                    unsafe {
+                        #[repr(align(1))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 2]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.finish-listen"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l2 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Accept a new client socket.
+                ///
+                /// The returned socket is bound and in the `connected` state. The following properties are inherited from the listener socket:
+                /// - `address-family`
+                /// - `keep-alive-enabled`
+                /// - `keep-alive-idle-time`
+                /// - `keep-alive-interval`
+                /// - `keep-alive-count`
+                /// - `hop-limit`
+                /// - `receive-buffer-size`
+                /// - `send-buffer-size`
+                ///
+                /// On success, this function returns the newly accepted client socket along with
+                /// a pair of streams that can be used to read & write to the connection.
+                ///
+                /// # Typical errors
+                /// - `invalid-state`:      Socket is not in the `listening` state. (EINVAL)
+                /// - `would-block`:        No pending connections at the moment. (EWOULDBLOCK, EAGAIN)
+                /// - `connection-aborted`: An incoming connection was pending, but was terminated by the client before this listener could accept it. (ECONNABORTED)
+                /// - `new-socket-limit`:   The new socket resource could not be created because of a system limit. (EMFILE, ENFILE)
+                ///
+                /// # References
+                /// - <https://pubs.opengroup.org/onlinepubs/9699919799/functions/accept.html>
+                /// - <https://man7.org/linux/man-pages/man2/accept.2.html>
+                /// - <https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-accept>
+                /// - <https://man.freebsd.org/cgi/man.cgi?query=accept&sektion=2>
+                pub fn accept(&self) -> Result<(TcpSocket, InputStream, OutputStream), ErrorCode> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.accept"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<i32>();
+                                    let l3 = *ptr0.add(8).cast::<i32>();
+                                    let l4 = *ptr0.add(12).cast::<i32>();
+
+                                    (TcpSocket::from_handle(l2 as u32), super::super::super::wasi::io::streams::InputStream::from_handle(l3 as u32), super::super::super::wasi::io::streams::OutputStream::from_handle(l4 as u32))
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l5 = i32::from(*ptr0.add(4).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l5 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Get the bound local address.
+                ///
+                /// POSIX mentions:
+                /// > If the socket has not been bound to a local name, the value
+                /// > stored in the object pointed to by `address` is unspecified.
+                ///
+                /// WASI is stricter and requires `local-address` to return `invalid-state` when the socket hasn't been bound yet.
+                ///
+                /// # Typical errors
+                /// - `invalid-state`: The socket is not bound to any local address.
+                ///
+                /// # References
+                /// - <https://pubs.opengroup.org/onlinepubs/9699919799/functions/getsockname.html>
+                /// - <https://man7.org/linux/man-pages/man2/getsockname.2.html>
+                /// - <https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-getsockname>
+                /// - <https://man.freebsd.org/cgi/man.cgi?getsockname>
+                pub fn local_address(&self) -> Result<IpSocketAddress, ErrorCode> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 36]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 36]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.local-address"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(4).cast::<u8>());
+                                    use super::super::super::wasi::sockets::network::IpSocketAddress as V19;
+                                    let v19 = match l2 {
+                                        0 => {
+                                            let e19 = {
+                                                let l3 = i32::from(*ptr0.add(8).cast::<u16>());
+                                                let l4 = i32::from(*ptr0.add(10).cast::<u8>());
+                                                let l5 = i32::from(*ptr0.add(11).cast::<u8>());
+                                                let l6 = i32::from(*ptr0.add(12).cast::<u8>());
+                                                let l7 = i32::from(*ptr0.add(13).cast::<u8>());
+
+                                                super::super::super::wasi::sockets::network::Ipv4SocketAddress{
+                          port: l3 as u16,
+                          address: (l4 as u8, l5 as u8, l6 as u8, l7 as u8),
+                        }
+                                            };
+                                            V19::Ipv4(e19)
+                                        }
+                                        n => {
+                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                            let e19 = {
+                                                let l8 = i32::from(*ptr0.add(8).cast::<u16>());
+                                                let l9 = *ptr0.add(12).cast::<i32>();
+                                                let l10 = i32::from(*ptr0.add(16).cast::<u16>());
+                                                let l11 = i32::from(*ptr0.add(18).cast::<u16>());
+                                                let l12 = i32::from(*ptr0.add(20).cast::<u16>());
+                                                let l13 = i32::from(*ptr0.add(22).cast::<u16>());
+                                                let l14 = i32::from(*ptr0.add(24).cast::<u16>());
+                                                let l15 = i32::from(*ptr0.add(26).cast::<u16>());
+                                                let l16 = i32::from(*ptr0.add(28).cast::<u16>());
+                                                let l17 = i32::from(*ptr0.add(30).cast::<u16>());
+                                                let l18 = *ptr0.add(32).cast::<i32>();
+
+                                                super::super::super::wasi::sockets::network::Ipv6SocketAddress{
+                          port: l8 as u16,
+                          flow_info: l9 as u32,
+                          address: (l10 as u16, l11 as u16, l12 as u16, l13 as u16, l14 as u16, l15 as u16, l16 as u16, l17 as u16),
+                          scope_id: l18 as u32,
+                        }
+                                            };
+                                            V19::Ipv6(e19)
+                                        }
+                                    };
+
+                                    v19
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l20 = i32::from(*ptr0.add(4).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l20 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Get the remote address.
+                ///
+                /// # Typical errors
+                /// - `invalid-state`: The socket is not connected to a remote address. (ENOTCONN)
+                ///
+                /// # References
+                /// - <https://pubs.opengroup.org/onlinepubs/9699919799/functions/getpeername.html>
+                /// - <https://man7.org/linux/man-pages/man2/getpeername.2.html>
+                /// - <https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-getpeername>
+                /// - <https://man.freebsd.org/cgi/man.cgi?query=getpeername&sektion=2&n=1>
+                pub fn remote_address(&self) -> Result<IpSocketAddress, ErrorCode> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 36]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 36]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.remote-address"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(4).cast::<u8>());
+                                    use super::super::super::wasi::sockets::network::IpSocketAddress as V19;
+                                    let v19 = match l2 {
+                                        0 => {
+                                            let e19 = {
+                                                let l3 = i32::from(*ptr0.add(8).cast::<u16>());
+                                                let l4 = i32::from(*ptr0.add(10).cast::<u8>());
+                                                let l5 = i32::from(*ptr0.add(11).cast::<u8>());
+                                                let l6 = i32::from(*ptr0.add(12).cast::<u8>());
+                                                let l7 = i32::from(*ptr0.add(13).cast::<u8>());
+
+                                                super::super::super::wasi::sockets::network::Ipv4SocketAddress{
+                          port: l3 as u16,
+                          address: (l4 as u8, l5 as u8, l6 as u8, l7 as u8),
+                        }
+                                            };
+                                            V19::Ipv4(e19)
+                                        }
+                                        n => {
+                                            debug_assert_eq!(n, 1, "invalid enum discriminant");
+                                            let e19 = {
+                                                let l8 = i32::from(*ptr0.add(8).cast::<u16>());
+                                                let l9 = *ptr0.add(12).cast::<i32>();
+                                                let l10 = i32::from(*ptr0.add(16).cast::<u16>());
+                                                let l11 = i32::from(*ptr0.add(18).cast::<u16>());
+                                                let l12 = i32::from(*ptr0.add(20).cast::<u16>());
+                                                let l13 = i32::from(*ptr0.add(22).cast::<u16>());
+                                                let l14 = i32::from(*ptr0.add(24).cast::<u16>());
+                                                let l15 = i32::from(*ptr0.add(26).cast::<u16>());
+                                                let l16 = i32::from(*ptr0.add(28).cast::<u16>());
+                                                let l17 = i32::from(*ptr0.add(30).cast::<u16>());
+                                                let l18 = *ptr0.add(32).cast::<i32>();
+
+                                                super::super::super::wasi::sockets::network::Ipv6SocketAddress{
+                          port: l8 as u16,
+                          flow_info: l9 as u32,
+                          address: (l10 as u16, l11 as u16, l12 as u16, l13 as u16, l14 as u16, l15 as u16, l16 as u16, l17 as u16),
+                          scope_id: l18 as u32,
+                        }
+                                            };
+                                            V19::Ipv6(e19)
+                                        }
+                                    };
+
+                                    v19
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l20 = i32::from(*ptr0.add(4).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l20 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Whether the socket is in the `listening` state.
+                ///
+                /// Equivalent to the SO_ACCEPTCONN socket option.
+                pub fn is_listening(&self) -> bool {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.is-listening"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        _rt::bool_lift(ret as u8)
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Whether this is a IPv4 or IPv6 socket.
+                ///
+                /// Equivalent to the SO_DOMAIN socket option.
+                pub fn address_family(&self) -> IpAddressFamily {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.address-family"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wasi::sockets::network::IpAddressFamily::_lift(
+                            ret as u8,
+                        )
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Hints the desired listen queue size. Implementations are free to ignore this.
+                ///
+                /// If the provided value is 0, an `invalid-argument` error is returned.
+                /// Any other value will never cause an error, but it might be silently clamped and/or rounded.
+                ///
+                /// # Typical errors
+                /// - `not-supported`:        (set) The platform does not support changing the backlog size after the initial listen.
+                /// - `invalid-argument`:     (set) The provided value was 0.
+                /// - `invalid-state`:        (set) The socket is in the `connect-in-progress` or `connected` state.
+                pub fn set_listen_backlog_size(&self, value: u64) -> Result<(), ErrorCode> {
+                    unsafe {
+                        #[repr(align(1))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 2]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.set-listen-backlog-size"]
+                            fn wit_import(_: i32, _: i64, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i64, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i64(&value), ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l2 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Enables or disables keepalive.
+                ///
+                /// The keepalive behavior can be adjusted using:
+                /// - `keep-alive-idle-time`
+                /// - `keep-alive-interval`
+                /// - `keep-alive-count`
+                /// These properties can be configured while `keep-alive-enabled` is false, but only come into effect when `keep-alive-enabled` is true.
+                ///
+                /// Equivalent to the SO_KEEPALIVE socket option.
+                pub fn keep_alive_enabled(&self) -> Result<bool, ErrorCode> {
+                    unsafe {
+                        #[repr(align(1))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 2]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.keep-alive-enabled"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                                    _rt::bool_lift(l2 as u8)
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l3 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l3 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_keep_alive_enabled(&self, value: bool) -> Result<(), ErrorCode> {
+                    unsafe {
+                        #[repr(align(1))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 2]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.set-keep-alive-enabled"]
+                            fn wit_import(_: i32, _: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import(
+                            (self).handle() as i32,
+                            match &value {
+                                true => 1,
+                                false => 0,
+                            },
+                            ptr0,
+                        );
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l2 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Amount of time the connection has to be idle before TCP starts sending keepalive packets.
+                ///
+                /// If the provided value is 0, an `invalid-argument` error is returned.
+                /// Any other value will never cause an error, but it might be silently clamped and/or rounded.
+                /// I.e. after setting a value, reading the same setting back may return a different value.
+                ///
+                /// Equivalent to the TCP_KEEPIDLE socket option. (TCP_KEEPALIVE on MacOS)
+                ///
+                /// # Typical errors
+                /// - `invalid-argument`:     (set) The provided value was 0.
+                pub fn keep_alive_idle_time(&self) -> Result<Duration, ErrorCode> {
+                    unsafe {
+                        #[repr(align(8))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.keep-alive-idle-time"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = {
+                                    let l2 = *ptr0.add(8).cast::<i64>();
+
+                                    l2 as u64
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l3 = i32::from(*ptr0.add(8).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l3 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_keep_alive_idle_time(&self, value: Duration) -> Result<(), ErrorCode> {
+                    unsafe {
+                        #[repr(align(1))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 2]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.set-keep-alive-idle-time"]
+                            fn wit_import(_: i32, _: i64, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i64, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i64(value), ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l2 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// The time between keepalive packets.
+                ///
+                /// If the provided value is 0, an `invalid-argument` error is returned.
+                /// Any other value will never cause an error, but it might be silently clamped and/or rounded.
+                /// I.e. after setting a value, reading the same setting back may return a different value.
+                ///
+                /// Equivalent to the TCP_KEEPINTVL socket option.
+                ///
+                /// # Typical errors
+                /// - `invalid-argument`:     (set) The provided value was 0.
+                pub fn keep_alive_interval(&self) -> Result<Duration, ErrorCode> {
+                    unsafe {
+                        #[repr(align(8))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.keep-alive-interval"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = {
+                                    let l2 = *ptr0.add(8).cast::<i64>();
+
+                                    l2 as u64
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l3 = i32::from(*ptr0.add(8).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l3 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_keep_alive_interval(&self, value: Duration) -> Result<(), ErrorCode> {
+                    unsafe {
+                        #[repr(align(1))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 2]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.set-keep-alive-interval"]
+                            fn wit_import(_: i32, _: i64, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i64, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i64(value), ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l2 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// The maximum amount of keepalive packets TCP should send before aborting the connection.
+                ///
+                /// If the provided value is 0, an `invalid-argument` error is returned.
+                /// Any other value will never cause an error, but it might be silently clamped and/or rounded.
+                /// I.e. after setting a value, reading the same setting back may return a different value.
+                ///
+                /// Equivalent to the TCP_KEEPCNT socket option.
+                ///
+                /// # Typical errors
+                /// - `invalid-argument`:     (set) The provided value was 0.
+                pub fn keep_alive_count(&self) -> Result<u32, ErrorCode> {
+                    unsafe {
+                        #[repr(align(4))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.keep-alive-count"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = {
+                                    let l2 = *ptr0.add(4).cast::<i32>();
+
+                                    l2 as u32
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l3 = i32::from(*ptr0.add(4).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l3 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_keep_alive_count(&self, value: u32) -> Result<(), ErrorCode> {
+                    unsafe {
+                        #[repr(align(1))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 2]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.set-keep-alive-count"]
+                            fn wit_import(_: i32, _: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i32(&value), ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l2 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Equivalent to the IP_TTL & IPV6_UNICAST_HOPS socket options.
+                ///
+                /// If the provided value is 0, an `invalid-argument` error is returned.
+                ///
+                /// # Typical errors
+                /// - `invalid-argument`:     (set) The TTL value must be 1 or higher.
+                pub fn hop_limit(&self) -> Result<u8, ErrorCode> {
+                    unsafe {
+                        #[repr(align(1))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 2]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.hop-limit"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                                    l2 as u8
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l3 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l3 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_hop_limit(&self, value: u8) -> Result<(), ErrorCode> {
+                    unsafe {
+                        #[repr(align(1))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 2]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.set-hop-limit"]
+                            fn wit_import(_: i32, _: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i32(&value), ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l2 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// The kernel buffer space reserved for sends/receives on this socket.
+                ///
+                /// If the provided value is 0, an `invalid-argument` error is returned.
+                /// Any other value will never cause an error, but it might be silently clamped and/or rounded.
+                /// I.e. after setting a value, reading the same setting back may return a different value.
+                ///
+                /// Equivalent to the SO_RCVBUF and SO_SNDBUF socket options.
+                ///
+                /// # Typical errors
+                /// - `invalid-argument`:     (set) The provided value was 0.
+                pub fn receive_buffer_size(&self) -> Result<u64, ErrorCode> {
+                    unsafe {
+                        #[repr(align(8))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.receive-buffer-size"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = {
+                                    let l2 = *ptr0.add(8).cast::<i64>();
+
+                                    l2 as u64
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l3 = i32::from(*ptr0.add(8).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l3 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_receive_buffer_size(&self, value: u64) -> Result<(), ErrorCode> {
+                    unsafe {
+                        #[repr(align(1))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 2]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.set-receive-buffer-size"]
+                            fn wit_import(_: i32, _: i64, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i64, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i64(&value), ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l2 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn send_buffer_size(&self) -> Result<u64, ErrorCode> {
+                    unsafe {
+                        #[repr(align(8))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.send-buffer-size"]
+                            fn wit_import(_: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = {
+                                    let l2 = *ptr0.add(8).cast::<i64>();
+
+                                    l2 as u64
+                                };
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l3 = i32::from(*ptr0.add(8).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l3 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                pub fn set_send_buffer_size(&self, value: u64) -> Result<(), ErrorCode> {
+                    unsafe {
+                        #[repr(align(1))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 2]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.set-send-buffer-size"]
+                            fn wit_import(_: i32, _: i64, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i64, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, _rt::as_i64(&value), ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l2 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Create a `pollable` which can be used to poll for, or block on,
+                /// completion of any of the asynchronous operations of this socket.
+                ///
+                /// When `finish-bind`, `finish-listen`, `finish-connect` or `accept`
+                /// return `error(would-block)`, this pollable can be used to wait for
+                /// their success or failure, after which the method can be retried.
+                ///
+                /// The pollable is not limited to the async operation that happens to be
+                /// in progress at the time of calling `subscribe` (if any). Theoretically,
+                /// `subscribe` only has to be called once per socket and can then be
+                /// (re)used for the remainder of the socket's lifetime.
+                ///
+                /// See <https://github.com/WebAssembly/wasi-sockets/TcpSocketOperationalSemantics.md#Pollable-readiness>
+                /// for a more information.
+                ///
+                /// Note: this function is here for WASI Preview2 only.
+                /// It's planned to be removed when `future` is natively supported in Preview3.
+                pub fn subscribe(&self) -> Pollable {
+                    unsafe {
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.subscribe"]
+                            fn wit_import(_: i32) -> i32;
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32) -> i32 {
+                            unreachable!()
+                        }
+                        let ret = wit_import((self).handle() as i32);
+                        super::super::super::wasi::io::poll::Pollable::from_handle(ret as u32)
+                    }
+                }
+            }
+            impl TcpSocket {
+                #[allow(unused_unsafe, clippy::all)]
+                /// Initiate a graceful shutdown.
+                ///
+                /// - `receive`: The socket is not expecting to receive any data from
+                /// the peer. The `input-stream` associated with this socket will be
+                /// closed. Any data still in the receive queue at time of calling
+                /// this method will be discarded.
+                /// - `send`: The socket has no more data to send to the peer. The `output-stream`
+                /// associated with this socket will be closed and a FIN packet will be sent.
+                /// - `both`: Same effect as `receive` & `send` combined.
+                ///
+                /// This function is idempotent. Shutting a down a direction more than once
+                /// has no effect and returns `ok`.
+                ///
+                /// The shutdown function does not close (drop) the socket.
+                ///
+                /// # Typical errors
+                /// - `invalid-state`: The socket is not in the `connected` state. (ENOTCONN)
+                ///
+                /// # References
+                /// - <https://pubs.opengroup.org/onlinepubs/9699919799/functions/shutdown.html>
+                /// - <https://man7.org/linux/man-pages/man2/shutdown.2.html>
+                /// - <https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-shutdown>
+                /// - <https://man.freebsd.org/cgi/man.cgi?query=shutdown&sektion=2>
+                pub fn shutdown(&self, shutdown_type: ShutdownType) -> Result<(), ErrorCode> {
+                    unsafe {
+                        #[repr(align(1))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 2]);
+                        let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+                        let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                        #[cfg(target_arch = "wasm32")]
+                        #[link(wasm_import_module = "wasi:sockets/tcp@0.2.0")]
+                        extern "C" {
+                            #[link_name = "[method]tcp-socket.shutdown"]
+                            fn wit_import(_: i32, _: i32, _: *mut u8);
+                        }
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        fn wit_import(_: i32, _: i32, _: *mut u8) {
+                            unreachable!()
+                        }
+                        wit_import((self).handle() as i32, shutdown_type.clone() as i32, ptr0);
+                        let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                        match l1 {
+                            0 => {
+                                let e = ();
+                                Ok(e)
+                            }
+                            1 => {
+                                let e = {
+                                    let l2 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                                    super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                        l2 as u8,
+                                    )
+                                };
+                                Err(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        }
+                    }
+                }
+            }
+        }
+
+        #[allow(dead_code, clippy::all)]
+        pub mod tcp_create_socket {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            pub type ErrorCode = super::super::super::wasi::sockets::network::ErrorCode;
+            pub type IpAddressFamily = super::super::super::wasi::sockets::network::IpAddressFamily;
+            pub type TcpSocket = super::super::super::wasi::sockets::tcp::TcpSocket;
+            #[allow(unused_unsafe, clippy::all)]
+            /// Create a new TCP socket.
+            ///
+            /// Similar to `socket(AF_INET or AF_INET6, SOCK_STREAM, IPPROTO_TCP)` in POSIX.
+            /// On IPv6 sockets, IPV6_V6ONLY is enabled by default and can't be configured otherwise.
+            ///
+            /// This function does not require a network capability handle. This is considered to be safe because
+            /// at time of creation, the socket is not bound to any `network` yet. Up to the moment `bind`/`connect`
+            /// is called, the socket is effectively an in-memory configuration object, unable to communicate with the outside world.
+            ///
+            /// All sockets are non-blocking. Use the wasi-poll interface to block on asynchronous operations.
+            ///
+            /// # Typical errors
+            /// - `not-supported`:     The specified `address-family` is not supported. (EAFNOSUPPORT)
+            /// - `new-socket-limit`:  The new socket resource could not be created because of a system limit. (EMFILE, ENFILE)
+            ///
+            /// # References
+            /// - <https://pubs.opengroup.org/onlinepubs/9699919799/functions/socket.html>
+            /// - <https://man7.org/linux/man-pages/man2/socket.2.html>
+            /// - <https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketw>
+            /// - <https://man.freebsd.org/cgi/man.cgi?query=socket&sektion=2>
+            pub fn create_tcp_socket(
+                address_family: IpAddressFamily,
+            ) -> Result<TcpSocket, ErrorCode> {
+                unsafe {
+                    #[repr(align(4))]
+                    struct RetArea([::core::mem::MaybeUninit<u8>; 8]);
+                    let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+                    let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wasi:sockets/tcp-create-socket@0.2.0")]
+                    extern "C" {
+                        #[link_name = "create-tcp-socket"]
+                        fn wit_import(_: i32, _: *mut u8);
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: i32, _: *mut u8) {
+                        unreachable!()
+                    }
+                    wit_import(address_family.clone() as i32, ptr0);
+                    let l1 = i32::from(*ptr0.add(0).cast::<u8>());
+                    match l1 {
+                        0 => {
+                            let e = {
+                                let l2 = *ptr0.add(4).cast::<i32>();
+
+                                super::super::super::wasi::sockets::tcp::TcpSocket::from_handle(
+                                    l2 as u32,
+                                )
+                            };
+                            Ok(e)
+                        }
+                        1 => {
+                            let e = {
+                                let l3 = i32::from(*ptr0.add(4).cast::<u8>());
+
+                                super::super::super::wasi::sockets::network::ErrorCode::_lift(
+                                    l3 as u8,
+                                )
+                            };
+                            Err(e)
+                        }
+                        _ => _rt::invalid_enum_discriminant(),
+                    }
+                }
+            }
+        }
     }
 }
 mod _rt {
@@ -413,15 +3870,100 @@ mod _rt {
             self as i64
         }
     }
+    pub use alloc_crate::string::String;
+    pub unsafe fn string_lift(bytes: Vec<u8>) -> String {
+        if cfg!(debug_assertions) {
+            String::from_utf8(bytes).unwrap()
+        } else {
+            String::from_utf8_unchecked(bytes)
+        }
+    }
+    pub unsafe fn invalid_enum_discriminant<T>() -> T {
+        if cfg!(debug_assertions) {
+            panic!("invalid enum discriminant")
+        } else {
+            core::hint::unreachable_unchecked()
+        }
+    }
+
+    pub fn as_i32<T: AsI32>(t: T) -> i32 {
+        t.as_i32()
+    }
+
+    pub trait AsI32 {
+        fn as_i32(self) -> i32;
+    }
+
+    impl<'a, T: Copy + AsI32> AsI32 for &'a T {
+        fn as_i32(self) -> i32 {
+            (*self).as_i32()
+        }
+    }
+
+    impl AsI32 for i32 {
+        #[inline]
+        fn as_i32(self) -> i32 {
+            self as i32
+        }
+    }
+
+    impl AsI32 for u32 {
+        #[inline]
+        fn as_i32(self) -> i32 {
+            self as i32
+        }
+    }
+
+    impl AsI32 for i16 {
+        #[inline]
+        fn as_i32(self) -> i32 {
+            self as i32
+        }
+    }
+
+    impl AsI32 for u16 {
+        #[inline]
+        fn as_i32(self) -> i32 {
+            self as i32
+        }
+    }
+
+    impl AsI32 for i8 {
+        #[inline]
+        fn as_i32(self) -> i32 {
+            self as i32
+        }
+    }
+
+    impl AsI32 for u8 {
+        #[inline]
+        fn as_i32(self) -> i32 {
+            self as i32
+        }
+    }
+
+    impl AsI32 for char {
+        #[inline]
+        fn as_i32(self) -> i32 {
+            self as i32
+        }
+    }
+
+    impl AsI32 for usize {
+        #[inline]
+        fn as_i32(self) -> i32 {
+            self as i32
+        }
+    }
     extern crate alloc as alloc_crate;
 }
 
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:wasm-runtime:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 526] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x8b\x03\x01A\x02\x01\
-A\x05\x01B\x0a\x04\0\x08pollable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\x04\0\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4301] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xca\x20\x01A\x02\x01\
+A\x18\x01B\x0a\x04\0\x08pollable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\x04\0\
 \x16[method]pollable.ready\x01\x02\x01@\x01\x04self\x01\x01\0\x04\0\x16[method]p\
 ollable.block\x01\x03\x01p\x01\x01py\x01@\x01\x02in\x04\0\x05\x04\0\x04poll\x01\x06\
 \x03\x01\x12wasi:io/poll@0.2.0\x05\0\x02\x03\0\0\x08pollable\x01B\x0f\x02\x03\x02\
@@ -429,9 +3971,85 @@ ollable.block\x01\x03\x01p\x01\x01py\x01@\x01\x02in\x04\0\x05\x04\0\x04poll\x01\
 duration\x03\0\x04\x01@\0\0\x03\x04\0\x03now\x01\x06\x01@\0\0\x05\x04\0\x0aresol\
 ution\x01\x07\x01i\x01\x01@\x01\x04when\x03\0\x08\x04\0\x11subscribe-instant\x01\
 \x09\x01@\x01\x04when\x05\0\x08\x04\0\x12subscribe-duration\x01\x0a\x03\x01!wasi\
-:clocks/monotonic-clock@0.2.0\x05\x02\x04\x01#component:wasm-runtime/wasm-runtim\
-e\x04\0\x0b\x12\x01\0\x0cwasm-runtime\x03\0\0\0G\x09producers\x01\x0cprocessed-b\
-y\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+:clocks/monotonic-clock@0.2.0\x05\x02\x01B\x11\x04\0\x07network\x03\x01\x01m\x15\
+\x07unknown\x0daccess-denied\x0dnot-supported\x10invalid-argument\x0dout-of-memo\
+ry\x07timeout\x14concurrency-conflict\x0fnot-in-progress\x0bwould-block\x0dinval\
+id-state\x10new-socket-limit\x14address-not-bindable\x0eaddress-in-use\x12remote\
+-unreachable\x12connection-refused\x10connection-reset\x12connection-aborted\x12\
+datagram-too-large\x11name-unresolvable\x1atemporary-resolver-failure\x1apermane\
+nt-resolver-failure\x04\0\x0aerror-code\x03\0\x01\x01m\x02\x04ipv4\x04ipv6\x04\0\
+\x11ip-address-family\x03\0\x03\x01o\x04}}}}\x04\0\x0cipv4-address\x03\0\x05\x01\
+o\x08{{{{{{{{\x04\0\x0cipv6-address\x03\0\x07\x01q\x02\x04ipv4\x01\x06\0\x04ipv6\
+\x01\x08\0\x04\0\x0aip-address\x03\0\x09\x01r\x02\x04port{\x07address\x06\x04\0\x13\
+ipv4-socket-address\x03\0\x0b\x01r\x04\x04port{\x09flow-infoy\x07address\x08\x08\
+scope-idy\x04\0\x13ipv6-socket-address\x03\0\x0d\x01q\x02\x04ipv4\x01\x0c\0\x04i\
+pv6\x01\x0e\0\x04\0\x11ip-socket-address\x03\0\x0f\x03\x01\x1awasi:sockets/netwo\
+rk@0.2.0\x05\x03\x01B\x04\x04\0\x05error\x03\x01\x01h\0\x01@\x01\x04self\x01\0s\x04\
+\0\x1d[method]error.to-debug-string\x01\x02\x03\x01\x13wasi:io/error@0.2.0\x05\x04\
+\x02\x03\0\x03\x05error\x01B(\x02\x03\x02\x01\x05\x04\0\x05error\x03\0\0\x02\x03\
+\x02\x01\x01\x04\0\x08pollable\x03\0\x02\x01i\x01\x01q\x02\x15last-operation-fai\
+led\x01\x04\0\x06closed\0\0\x04\0\x0cstream-error\x03\0\x05\x04\0\x0cinput-strea\
+m\x03\x01\x04\0\x0doutput-stream\x03\x01\x01h\x07\x01p}\x01j\x01\x0a\x01\x06\x01\
+@\x02\x04self\x09\x03lenw\0\x0b\x04\0\x19[method]input-stream.read\x01\x0c\x04\0\
+\"[method]input-stream.blocking-read\x01\x0c\x01j\x01w\x01\x06\x01@\x02\x04self\x09\
+\x03lenw\0\x0d\x04\0\x19[method]input-stream.skip\x01\x0e\x04\0\"[method]input-s\
+tream.blocking-skip\x01\x0e\x01i\x03\x01@\x01\x04self\x09\0\x0f\x04\0\x1e[method\
+]input-stream.subscribe\x01\x10\x01h\x08\x01@\x01\x04self\x11\0\x0d\x04\0![metho\
+d]output-stream.check-write\x01\x12\x01j\0\x01\x06\x01@\x02\x04self\x11\x08conte\
+nts\x0a\0\x13\x04\0\x1b[method]output-stream.write\x01\x14\x04\0.[method]output-\
+stream.blocking-write-and-flush\x01\x14\x01@\x01\x04self\x11\0\x13\x04\0\x1b[met\
+hod]output-stream.flush\x01\x15\x04\0$[method]output-stream.blocking-flush\x01\x15\
+\x01@\x01\x04self\x11\0\x0f\x04\0\x1f[method]output-stream.subscribe\x01\x16\x01\
+@\x02\x04self\x11\x03lenw\0\x13\x04\0\"[method]output-stream.write-zeroes\x01\x17\
+\x04\05[method]output-stream.blocking-write-zeroes-and-flush\x01\x17\x01@\x03\x04\
+self\x11\x03src\x09\x03lenw\0\x0d\x04\0\x1c[method]output-stream.splice\x01\x18\x04\
+\0%[method]output-stream.blocking-splice\x01\x18\x03\x01\x15wasi:io/streams@0.2.\
+0\x05\x06\x02\x03\0\x04\x0cinput-stream\x02\x03\0\x04\x0doutput-stream\x02\x03\0\
+\x01\x08duration\x02\x03\0\x02\x07network\x02\x03\0\x02\x0aerror-code\x02\x03\0\x02\
+\x11ip-socket-address\x02\x03\0\x02\x11ip-address-family\x01BT\x02\x03\x02\x01\x07\
+\x04\0\x0cinput-stream\x03\0\0\x02\x03\x02\x01\x08\x04\0\x0doutput-stream\x03\0\x02\
+\x02\x03\x02\x01\x01\x04\0\x08pollable\x03\0\x04\x02\x03\x02\x01\x09\x04\0\x08du\
+ration\x03\0\x06\x02\x03\x02\x01\x0a\x04\0\x07network\x03\0\x08\x02\x03\x02\x01\x0b\
+\x04\0\x0aerror-code\x03\0\x0a\x02\x03\x02\x01\x0c\x04\0\x11ip-socket-address\x03\
+\0\x0c\x02\x03\x02\x01\x0d\x04\0\x11ip-address-family\x03\0\x0e\x01m\x03\x07rece\
+ive\x04send\x04both\x04\0\x0dshutdown-type\x03\0\x10\x04\0\x0atcp-socket\x03\x01\
+\x01h\x12\x01h\x09\x01j\0\x01\x0b\x01@\x03\x04self\x13\x07network\x14\x0dlocal-a\
+ddress\x0d\0\x15\x04\0\x1d[method]tcp-socket.start-bind\x01\x16\x01@\x01\x04self\
+\x13\0\x15\x04\0\x1e[method]tcp-socket.finish-bind\x01\x17\x01@\x03\x04self\x13\x07\
+network\x14\x0eremote-address\x0d\0\x15\x04\0\x20[method]tcp-socket.start-connec\
+t\x01\x18\x01i\x01\x01i\x03\x01o\x02\x19\x1a\x01j\x01\x1b\x01\x0b\x01@\x01\x04se\
+lf\x13\0\x1c\x04\0![method]tcp-socket.finish-connect\x01\x1d\x04\0\x1f[method]tc\
+p-socket.start-listen\x01\x17\x04\0\x20[method]tcp-socket.finish-listen\x01\x17\x01\
+i\x12\x01o\x03\x1e\x19\x1a\x01j\x01\x1f\x01\x0b\x01@\x01\x04self\x13\0\x20\x04\0\
+\x19[method]tcp-socket.accept\x01!\x01j\x01\x0d\x01\x0b\x01@\x01\x04self\x13\0\"\
+\x04\0\x20[method]tcp-socket.local-address\x01#\x04\0![method]tcp-socket.remote-\
+address\x01#\x01@\x01\x04self\x13\0\x7f\x04\0\x1f[method]tcp-socket.is-listening\
+\x01$\x01@\x01\x04self\x13\0\x0f\x04\0![method]tcp-socket.address-family\x01%\x01\
+@\x02\x04self\x13\x05valuew\0\x15\x04\0*[method]tcp-socket.set-listen-backlog-si\
+ze\x01&\x01j\x01\x7f\x01\x0b\x01@\x01\x04self\x13\0'\x04\0%[method]tcp-socket.ke\
+ep-alive-enabled\x01(\x01@\x02\x04self\x13\x05value\x7f\0\x15\x04\0)[method]tcp-\
+socket.set-keep-alive-enabled\x01)\x01j\x01\x07\x01\x0b\x01@\x01\x04self\x13\0*\x04\
+\0'[method]tcp-socket.keep-alive-idle-time\x01+\x01@\x02\x04self\x13\x05value\x07\
+\0\x15\x04\0+[method]tcp-socket.set-keep-alive-idle-time\x01,\x04\0&[method]tcp-\
+socket.keep-alive-interval\x01+\x04\0*[method]tcp-socket.set-keep-alive-interval\
+\x01,\x01j\x01y\x01\x0b\x01@\x01\x04self\x13\0-\x04\0#[method]tcp-socket.keep-al\
+ive-count\x01.\x01@\x02\x04self\x13\x05valuey\0\x15\x04\0'[method]tcp-socket.set\
+-keep-alive-count\x01/\x01j\x01}\x01\x0b\x01@\x01\x04self\x13\00\x04\0\x1c[metho\
+d]tcp-socket.hop-limit\x011\x01@\x02\x04self\x13\x05value}\0\x15\x04\0\x20[metho\
+d]tcp-socket.set-hop-limit\x012\x01j\x01w\x01\x0b\x01@\x01\x04self\x13\03\x04\0&\
+[method]tcp-socket.receive-buffer-size\x014\x04\0*[method]tcp-socket.set-receive\
+-buffer-size\x01&\x04\0#[method]tcp-socket.send-buffer-size\x014\x04\0'[method]t\
+cp-socket.set-send-buffer-size\x01&\x01i\x05\x01@\x01\x04self\x13\05\x04\0\x1c[m\
+ethod]tcp-socket.subscribe\x016\x01@\x02\x04self\x13\x0dshutdown-type\x11\0\x15\x04\
+\0\x1b[method]tcp-socket.shutdown\x017\x03\x01\x16wasi:sockets/tcp@0.2.0\x05\x0e\
+\x02\x03\0\x05\x0atcp-socket\x01B\x0c\x02\x03\x02\x01\x0a\x04\0\x07network\x03\0\
+\0\x02\x03\x02\x01\x0b\x04\0\x0aerror-code\x03\0\x02\x02\x03\x02\x01\x0d\x04\0\x11\
+ip-address-family\x03\0\x04\x02\x03\x02\x01\x0f\x04\0\x0atcp-socket\x03\0\x06\x01\
+i\x07\x01j\x01\x08\x01\x03\x01@\x01\x0eaddress-family\x05\0\x09\x04\0\x11create-\
+tcp-socket\x01\x0a\x03\x01$wasi:sockets/tcp-create-socket@0.2.0\x05\x10\x04\x01#\
+component:wasm-runtime/wasm-runtime\x04\0\x0b\x12\x01\0\x0cwasm-runtime\x03\0\0\0\
+G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindge\
+n-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

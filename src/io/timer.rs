@@ -2,6 +2,7 @@ use crate::bindings::wasi::{
     clocks::monotonic_clock::{subscribe_duration, subscribe_instant},
     io::poll::Pollable,
 };
+use std::rc::Rc;
 #[derive(Debug)]
 pub struct Timer {
     pollable: Pollable,
@@ -21,8 +22,8 @@ impl Timer {
         }
     }
 }
-impl From<Timer> for Pollable {
+impl From<Timer> for Rc<Pollable> {
     fn from(value: Timer) -> Self {
-        value.pollable
+        Rc::new(value.pollable)
     }
 }

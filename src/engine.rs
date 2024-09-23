@@ -1,6 +1,7 @@
 use crossbeam::channel::{Receiver, Sender};
 use futures::pin_mut;
 use futures::StreamExt;
+use std::rc::Rc;
 use std::{
     future::Future,
     sync::Arc,
@@ -24,7 +25,7 @@ pub struct Reactor {
 
 impl Reactor {
     //adds event to the queue
-    pub fn register<T: Into<Pollable>>(&mut self, event_name: String, pollable: T) {
+    pub fn register<T: Into<Rc<Pollable>>>(&mut self, event_name: String, pollable: T) {
         self.events.push(event_name, pollable.into());
     }
 

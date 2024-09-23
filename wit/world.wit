@@ -4,4 +4,6 @@ package component:wasm-runtime;
 world wasm-runtime {
     import wasi:io/poll@0.2.0;
     import wasi:clocks/monotonic-clock@0.2.0;
+    import wasi:sockets/tcp-create-socket@0.2.0;
+    import wasi:sockets/tcp@0.2.0;
 }

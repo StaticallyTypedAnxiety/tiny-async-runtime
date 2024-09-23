@@ -3,18 +3,19 @@ use std::{
     task::{Context, Poll},
 };
 
-use futures::Stream;
-
 use crate::bindings::wasi::io::poll::{poll, Pollable};
+use futures::Stream;
+use std::rc::Rc;
+type PollableCell = Rc<Pollable>;
 
 ///Future that is used to poll changes from the host\
 #[derive(Default, Debug)]
 pub struct PollTasks {
-    pendings: HashMap<String, Pollable>,
+    pendings: HashMap<String, PollableCell>,
 }
 
 impl PollTasks {
-    pub(crate) fn push(&mut self, event_name: String, pollable: Pollable) {
+    pub(crate) fn push(&mut self, event_name: String, pollable: PollableCell) {
         self.pendings.insert(event_name, pollable);
     }
 }
@@ -27,7 +28,11 @@ impl Stream for PollTasks {
         if this.pendings.is_empty() {
             return Poll::Ready(None);
         }
-        let pending_polls = this.pendings.values().collect::<Vec<_>>();
+        let pending_polls = this
+            .pendings
+            .values()
+            .map(|cell| cell.as_ref())
+            .collect::<Vec<_>>();
         poll(pending_polls.as_slice());
         let ready_set = this
             .pendings
