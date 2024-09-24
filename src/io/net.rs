@@ -31,7 +31,7 @@ impl TcpStream {
     }
 
     pub fn new_ipv6() -> IOResult<Self> {
-        Self::new_inner(IpAddressFamily::Ipv4)
+        Self::new_inner(IpAddressFamily::Ipv6)
     }
 
     pub fn new_inner(address: IpAddressFamily) -> IOResult<Self> {
