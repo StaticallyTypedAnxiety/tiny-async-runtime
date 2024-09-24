@@ -3731,6 +3731,35 @@ pub mod wasi {
                 }
             }
         }
+
+        #[allow(dead_code, clippy::all)]
+        pub mod instance_network {
+            #[used]
+            #[doc(hidden)]
+            #[cfg(target_arch = "wasm32")]
+            static __FORCE_SECTION_REF: fn() =
+                super::super::super::__link_custom_section_describing_imports;
+            pub type Network = super::super::super::wasi::sockets::network::Network;
+            #[allow(unused_unsafe, clippy::all)]
+            /// Get a handle to the default network.
+            pub fn instance_network() -> Network {
+                unsafe {
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "wasi:sockets/instance-network@0.2.0")]
+                    extern "C" {
+                        #[link_name = "instance-network"]
+                        fn wit_import() -> i32;
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import() -> i32 {
+                        unreachable!()
+                    }
+                    let ret = wit_import();
+                    super::super::super::wasi::sockets::network::Network::from_handle(ret as u32)
+                }
+            }
+        }
     }
 }
 mod _rt {
@@ -3961,48 +3990,48 @@ mod _rt {
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:wasm-runtime:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4301] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xca\x20\x01A\x02\x01\
-A\x18\x01B\x0a\x04\0\x08pollable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\x04\0\
-\x16[method]pollable.ready\x01\x02\x01@\x01\x04self\x01\x01\0\x04\0\x16[method]p\
-ollable.block\x01\x03\x01p\x01\x01py\x01@\x01\x02in\x04\0\x05\x04\0\x04poll\x01\x06\
-\x03\x01\x12wasi:io/poll@0.2.0\x05\0\x02\x03\0\0\x08pollable\x01B\x0f\x02\x03\x02\
-\x01\x01\x04\0\x08pollable\x03\0\0\x01w\x04\0\x07instant\x03\0\x02\x01w\x04\0\x08\
-duration\x03\0\x04\x01@\0\0\x03\x04\0\x03now\x01\x06\x01@\0\0\x05\x04\0\x0aresol\
-ution\x01\x07\x01i\x01\x01@\x01\x04when\x03\0\x08\x04\0\x11subscribe-instant\x01\
-\x09\x01@\x01\x04when\x05\0\x08\x04\0\x12subscribe-duration\x01\x0a\x03\x01!wasi\
-:clocks/monotonic-clock@0.2.0\x05\x02\x01B\x11\x04\0\x07network\x03\x01\x01m\x15\
-\x07unknown\x0daccess-denied\x0dnot-supported\x10invalid-argument\x0dout-of-memo\
-ry\x07timeout\x14concurrency-conflict\x0fnot-in-progress\x0bwould-block\x0dinval\
-id-state\x10new-socket-limit\x14address-not-bindable\x0eaddress-in-use\x12remote\
--unreachable\x12connection-refused\x10connection-reset\x12connection-aborted\x12\
-datagram-too-large\x11name-unresolvable\x1atemporary-resolver-failure\x1apermane\
-nt-resolver-failure\x04\0\x0aerror-code\x03\0\x01\x01m\x02\x04ipv4\x04ipv6\x04\0\
-\x11ip-address-family\x03\0\x03\x01o\x04}}}}\x04\0\x0cipv4-address\x03\0\x05\x01\
-o\x08{{{{{{{{\x04\0\x0cipv6-address\x03\0\x07\x01q\x02\x04ipv4\x01\x06\0\x04ipv6\
-\x01\x08\0\x04\0\x0aip-address\x03\0\x09\x01r\x02\x04port{\x07address\x06\x04\0\x13\
-ipv4-socket-address\x03\0\x0b\x01r\x04\x04port{\x09flow-infoy\x07address\x08\x08\
-scope-idy\x04\0\x13ipv6-socket-address\x03\0\x0d\x01q\x02\x04ipv4\x01\x0c\0\x04i\
-pv6\x01\x0e\0\x04\0\x11ip-socket-address\x03\0\x0f\x03\x01\x1awasi:sockets/netwo\
-rk@0.2.0\x05\x03\x01B\x04\x04\0\x05error\x03\x01\x01h\0\x01@\x01\x04self\x01\0s\x04\
-\0\x1d[method]error.to-debug-string\x01\x02\x03\x01\x13wasi:io/error@0.2.0\x05\x04\
-\x02\x03\0\x03\x05error\x01B(\x02\x03\x02\x01\x05\x04\0\x05error\x03\0\0\x02\x03\
-\x02\x01\x01\x04\0\x08pollable\x03\0\x02\x01i\x01\x01q\x02\x15last-operation-fai\
-led\x01\x04\0\x06closed\0\0\x04\0\x0cstream-error\x03\0\x05\x04\0\x0cinput-strea\
-m\x03\x01\x04\0\x0doutput-stream\x03\x01\x01h\x07\x01p}\x01j\x01\x0a\x01\x06\x01\
-@\x02\x04self\x09\x03lenw\0\x0b\x04\0\x19[method]input-stream.read\x01\x0c\x04\0\
-\"[method]input-stream.blocking-read\x01\x0c\x01j\x01w\x01\x06\x01@\x02\x04self\x09\
-\x03lenw\0\x0d\x04\0\x19[method]input-stream.skip\x01\x0e\x04\0\"[method]input-s\
-tream.blocking-skip\x01\x0e\x01i\x03\x01@\x01\x04self\x09\0\x0f\x04\0\x1e[method\
-]input-stream.subscribe\x01\x10\x01h\x08\x01@\x01\x04self\x11\0\x0d\x04\0![metho\
-d]output-stream.check-write\x01\x12\x01j\0\x01\x06\x01@\x02\x04self\x11\x08conte\
-nts\x0a\0\x13\x04\0\x1b[method]output-stream.write\x01\x14\x04\0.[method]output-\
-stream.blocking-write-and-flush\x01\x14\x01@\x01\x04self\x11\0\x13\x04\0\x1b[met\
-hod]output-stream.flush\x01\x15\x04\0$[method]output-stream.blocking-flush\x01\x15\
-\x01@\x01\x04self\x11\0\x0f\x04\0\x1f[method]output-stream.subscribe\x01\x16\x01\
-@\x02\x04self\x11\x03lenw\0\x13\x04\0\"[method]output-stream.write-zeroes\x01\x17\
-\x04\05[method]output-stream.blocking-write-zeroes-and-flush\x01\x17\x01@\x03\x04\
-self\x11\x03src\x09\x03lenw\0\x0d\x04\0\x1c[method]output-stream.splice\x01\x18\x04\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 4391] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa4!\x01A\x02\x01A\x1a\
+\x01B\x0a\x04\0\x08pollable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\x04\0\x16[\
+method]pollable.ready\x01\x02\x01@\x01\x04self\x01\x01\0\x04\0\x16[method]pollab\
+le.block\x01\x03\x01p\x01\x01py\x01@\x01\x02in\x04\0\x05\x04\0\x04poll\x01\x06\x03\
+\x01\x12wasi:io/poll@0.2.0\x05\0\x02\x03\0\0\x08pollable\x01B\x0f\x02\x03\x02\x01\
+\x01\x04\0\x08pollable\x03\0\0\x01w\x04\0\x07instant\x03\0\x02\x01w\x04\0\x08dur\
+ation\x03\0\x04\x01@\0\0\x03\x04\0\x03now\x01\x06\x01@\0\0\x05\x04\0\x0aresoluti\
+on\x01\x07\x01i\x01\x01@\x01\x04when\x03\0\x08\x04\0\x11subscribe-instant\x01\x09\
+\x01@\x01\x04when\x05\0\x08\x04\0\x12subscribe-duration\x01\x0a\x03\x01!wasi:clo\
+cks/monotonic-clock@0.2.0\x05\x02\x01B\x11\x04\0\x07network\x03\x01\x01m\x15\x07\
+unknown\x0daccess-denied\x0dnot-supported\x10invalid-argument\x0dout-of-memory\x07\
+timeout\x14concurrency-conflict\x0fnot-in-progress\x0bwould-block\x0dinvalid-sta\
+te\x10new-socket-limit\x14address-not-bindable\x0eaddress-in-use\x12remote-unrea\
+chable\x12connection-refused\x10connection-reset\x12connection-aborted\x12datagr\
+am-too-large\x11name-unresolvable\x1atemporary-resolver-failure\x1apermanent-res\
+olver-failure\x04\0\x0aerror-code\x03\0\x01\x01m\x02\x04ipv4\x04ipv6\x04\0\x11ip\
+-address-family\x03\0\x03\x01o\x04}}}}\x04\0\x0cipv4-address\x03\0\x05\x01o\x08{\
+{{{{{{{\x04\0\x0cipv6-address\x03\0\x07\x01q\x02\x04ipv4\x01\x06\0\x04ipv6\x01\x08\
+\0\x04\0\x0aip-address\x03\0\x09\x01r\x02\x04port{\x07address\x06\x04\0\x13ipv4-\
+socket-address\x03\0\x0b\x01r\x04\x04port{\x09flow-infoy\x07address\x08\x08scope\
+-idy\x04\0\x13ipv6-socket-address\x03\0\x0d\x01q\x02\x04ipv4\x01\x0c\0\x04ipv6\x01\
+\x0e\0\x04\0\x11ip-socket-address\x03\0\x0f\x03\x01\x1awasi:sockets/network@0.2.\
+0\x05\x03\x01B\x04\x04\0\x05error\x03\x01\x01h\0\x01@\x01\x04self\x01\0s\x04\0\x1d\
+[method]error.to-debug-string\x01\x02\x03\x01\x13wasi:io/error@0.2.0\x05\x04\x02\
+\x03\0\x03\x05error\x01B(\x02\x03\x02\x01\x05\x04\0\x05error\x03\0\0\x02\x03\x02\
+\x01\x01\x04\0\x08pollable\x03\0\x02\x01i\x01\x01q\x02\x15last-operation-failed\x01\
+\x04\0\x06closed\0\0\x04\0\x0cstream-error\x03\0\x05\x04\0\x0cinput-stream\x03\x01\
+\x04\0\x0doutput-stream\x03\x01\x01h\x07\x01p}\x01j\x01\x0a\x01\x06\x01@\x02\x04\
+self\x09\x03lenw\0\x0b\x04\0\x19[method]input-stream.read\x01\x0c\x04\0\"[method\
+]input-stream.blocking-read\x01\x0c\x01j\x01w\x01\x06\x01@\x02\x04self\x09\x03le\
+nw\0\x0d\x04\0\x19[method]input-stream.skip\x01\x0e\x04\0\"[method]input-stream.\
+blocking-skip\x01\x0e\x01i\x03\x01@\x01\x04self\x09\0\x0f\x04\0\x1e[method]input\
+-stream.subscribe\x01\x10\x01h\x08\x01@\x01\x04self\x11\0\x0d\x04\0![method]outp\
+ut-stream.check-write\x01\x12\x01j\0\x01\x06\x01@\x02\x04self\x11\x08contents\x0a\
+\0\x13\x04\0\x1b[method]output-stream.write\x01\x14\x04\0.[method]output-stream.\
+blocking-write-and-flush\x01\x14\x01@\x01\x04self\x11\0\x13\x04\0\x1b[method]out\
+put-stream.flush\x01\x15\x04\0$[method]output-stream.blocking-flush\x01\x15\x01@\
+\x01\x04self\x11\0\x0f\x04\0\x1f[method]output-stream.subscribe\x01\x16\x01@\x02\
+\x04self\x11\x03lenw\0\x13\x04\0\"[method]output-stream.write-zeroes\x01\x17\x04\
+\05[method]output-stream.blocking-write-zeroes-and-flush\x01\x17\x01@\x03\x04sel\
+f\x11\x03src\x09\x03lenw\0\x0d\x04\0\x1c[method]output-stream.splice\x01\x18\x04\
 \0%[method]output-stream.blocking-splice\x01\x18\x03\x01\x15wasi:io/streams@0.2.\
 0\x05\x06\x02\x03\0\x04\x0cinput-stream\x02\x03\0\x04\x0doutput-stream\x02\x03\0\
 \x01\x08duration\x02\x03\0\x02\x07network\x02\x03\0\x02\x0aerror-code\x02\x03\0\x02\
@@ -4046,10 +4075,12 @@ ethod]tcp-socket.subscribe\x016\x01@\x02\x04self\x13\x0dshutdown-type\x11\0\x15\
 \0\x02\x03\x02\x01\x0b\x04\0\x0aerror-code\x03\0\x02\x02\x03\x02\x01\x0d\x04\0\x11\
 ip-address-family\x03\0\x04\x02\x03\x02\x01\x0f\x04\0\x0atcp-socket\x03\0\x06\x01\
 i\x07\x01j\x01\x08\x01\x03\x01@\x01\x0eaddress-family\x05\0\x09\x04\0\x11create-\
-tcp-socket\x01\x0a\x03\x01$wasi:sockets/tcp-create-socket@0.2.0\x05\x10\x04\x01#\
-component:wasm-runtime/wasm-runtime\x04\0\x0b\x12\x01\0\x0cwasm-runtime\x03\0\0\0\
-G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindge\
-n-rust\x060.25.0";
+tcp-socket\x01\x0a\x03\x01$wasi:sockets/tcp-create-socket@0.2.0\x05\x10\x01B\x05\
+\x02\x03\x02\x01\x0a\x04\0\x07network\x03\0\0\x01i\x01\x01@\0\0\x02\x04\0\x10ins\
+tance-network\x01\x03\x03\x01#wasi:sockets/instance-network@0.2.0\x05\x11\x04\x01\
+#component:wasm-runtime/wasm-runtime\x04\0\x0b\x12\x01\0\x0cwasm-runtime\x03\0\0\
+\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bind\
+gen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

@@ -6,4 +6,5 @@ world wasm-runtime {
     import wasi:clocks/monotonic-clock@0.2.0;
     import wasi:sockets/tcp-create-socket@0.2.0;
     import wasi:sockets/tcp@0.2.0;
+    import wasi:sockets/instance-network@0.2.0;
 }

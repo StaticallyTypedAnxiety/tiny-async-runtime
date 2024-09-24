@@ -1,21 +1,71 @@
-use crate::bindings::wasi::sockets::{
-    network::IpAddress,
-    tcp::{IpAddressFamily, TcpSocket},
-    tcp_create_socket::{create_tcp_socket, ErrorCode},
+use crate::bindings::wasi::{
+    io::{
+        poll::Pollable,
+        streams::{InputStream, OutputStream},
+    },
+    sockets::{
+        instance_network::instance_network,
+        network::{IpAddress, IpSocketAddress, Ipv4SocketAddress, Ipv6SocketAddress, Network},
+        tcp::{IpAddressFamily, TcpSocket},
+        tcp_create_socket::{create_tcp_socket, ErrorCode},
+    },
 };
+use std::cell::OnceCell;
 use std::io::ErrorKind;
 use std::net::IpAddr;
-struct TcpStream {
-    _socket: TcpSocket,
+use std::rc::Rc;
+pub struct TcpStream {
+    socket: TcpSocket,
+    pollable: PollableRef,
+    input_stream: OnceCell<InputStream>,
+    output_stream: OnceCell<OutputStream>,
+    network: Network,
 }
 type IOResult<T> = std::io::Result<T>;
 type IOError = std::io::Error;
+type PollableRef = Rc<Pollable>;
 
 impl TcpStream {
-    pub fn create<T: Into<IpAddressFamily>>(ip_address: T) -> IOResult<Self> {
+    pub fn new_ipv4() -> IOResult<Self> {
+        Self::new_inner(IpAddressFamily::Ipv4)
+    }
+
+    pub fn new_ipv6() -> IOResult<Self> {
+        Self::new_inner(IpAddressFamily::Ipv4)
+    }
+
+    pub fn new_inner(address: IpAddressFamily) -> IOResult<Self> {
+        let socket = create_tcp_socket(address)?;
+        let pollable = socket.subscribe();
         Ok(Self {
-            _socket: create_tcp_socket(ip_address.into())?,
+            socket,
+            pollable: Rc::new(pollable),
+            input_stream: OnceCell::new(),
+            output_stream: OnceCell::new(),
+            network: instance_network(),
         })
+    }
+
+    pub fn start_connect<T: Into<IpAddress>>(&mut self, address: T, port: u16) -> IOResult<()> {
+        let ip_address: IpAddress = address.into();
+        let socket_address = match ip_address {
+            IpAddress::Ipv4(address) => IpSocketAddress::Ipv4(Ipv4SocketAddress { port, address }),
+            IpAddress::Ipv6(address) => IpSocketAddress::Ipv6(Ipv6SocketAddress {
+                port,
+                address,
+                scope_id: 0,  //need to put the right details here
+                flow_info: 0, // need to put the right details here
+            }),
+        };
+        self.socket.start_connect(&self.network, socket_address)?;
+        Ok(())
+    }
+
+    pub fn finish_connecting(&mut self) -> IOResult<()> {
+        let (input, output) = self.socket.finish_connect()?;
+        let _ = self.input_stream.set(input);
+        let _ = self.output_stream.set(output);
+        Ok(())
     }
 }
 
@@ -39,16 +89,6 @@ impl From<IpAddr> for IpAddress {
                     segments[7],
                 ))
             }
-        }
-    }
-}
-
-impl From<IpAddr> for IpAddressFamily {
-    fn from(address: IpAddr) -> Self {
-        if address.is_ipv4() {
-            IpAddressFamily::Ipv4
-        } else {
-            IpAddressFamily::Ipv6
         }
     }
 }
@@ -85,5 +125,11 @@ impl From<&ErrorCode> for ErrorKind {
             ErrorCode::TemporaryResolverFailure => ErrorKind::Other,
             ErrorCode::PermanentResolverFailure => ErrorKind::Other,
         }
+    }
+}
+
+impl From<&TcpStream> for Rc<Pollable> {
+    fn from(socket: &TcpStream) -> Self {
+        socket.pollable.clone()
     }
 }
