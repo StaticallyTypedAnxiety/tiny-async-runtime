@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 use crate::bindings::wasi::io::poll::{poll, Pollable};
 
@@ -49,4 +46,3 @@ impl PollTasks {
         }
     }
 }
-

@@ -55,7 +55,7 @@ impl Future for TimeoutFuture {
     type Output = ();
     fn poll(
         self: std::pin::Pin<&mut Self>,
-        _: &mut std::task::Context<'_>,
+        cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
         let has_elapsed = TIMERS
             .get(&self.id)
@@ -64,6 +64,7 @@ impl Future for TimeoutFuture {
         if has_elapsed {
             return std::task::Poll::Ready(());
         }
+        cx.waker().wake_by_ref();
         std::task::Poll::Pending
     }
 }

@@ -75,6 +75,11 @@ impl WasmRuntimeAsyncEngine {
     }
 }
 
+
+pub fn next_id()
+{
+    
+}
 struct FutureWaker(Sender<()>);
 
 impl FutureWaker {
@@ -91,7 +96,7 @@ impl Wake for FutureWaker {
 
 #[cfg(test)]
 mod test {
-   
+
     use super::*;
     use std::future::Future;
 

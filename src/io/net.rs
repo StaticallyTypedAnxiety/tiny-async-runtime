@@ -155,7 +155,7 @@ impl<'a> Future for ConnectionFuture<'a> {
     type Output = IOResult<()>;
     fn poll(
         self: std::pin::Pin<&mut Self>,
-        _: &mut std::task::Context<'_>,
+        cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
         let this = self.get_mut();
         if !REACTOR.lock().unwrap().is_pollable(&this.async_key) {
@@ -172,6 +172,7 @@ impl<'a> Future for ConnectionFuture<'a> {
             this.stream.finish_connecting()?;
             Poll::Ready(Ok(()))
         } else {
+            cx.waker().wake_by_ref();
             Poll::Pending
         }
     }
