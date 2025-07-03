@@ -1,6 +1,0 @@
-package component:timer-wasm;
-
-/// An example world for the component to target.
-world example {
-    export run-timer-example: func();
-}

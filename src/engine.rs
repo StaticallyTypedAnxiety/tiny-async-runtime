@@ -1,15 +1,21 @@
 use crossbeam::channel::{Receiver, Sender};
 use futures::pin_mut;
-use futures::StreamExt;
-use std::rc::Rc;
+use lazy_static::lazy_static;
 use std::{
     future::Future,
-    sync::Arc,
+    sync::{atomic::AtomicU32, Arc, Mutex},
     task::{Context, Poll, Wake},
 };
 const TASK_QUEUE_BUFFER: usize = 1024;
+use crate::io::timer::TIMERS;
 use crate::{bindings::wasi::io::poll::Pollable, poll_tasks::PollTasks};
+lazy_static! {
+    /// The global reactor for this runtime
+    pub static ref REACTOR: Mutex<Reactor> = Mutex::new(Reactor::default());
 
+}
+
+pub(crate) static NEXT_ID: AtomicU32 = AtomicU32::new(0);
 /// The async engine instance
 pub struct WasmRuntimeAsyncEngine {
     waker: Arc<FutureWaker>,
@@ -25,20 +31,29 @@ pub struct Reactor {
 
 impl Reactor {
     //adds event to the queue
-    pub fn register<T: Into<Rc<Pollable>>>(&mut self, event_name: String, pollable: T) {
-        self.events.push(event_name, pollable.into());
+    pub fn register(&mut self, event_name: String, pollable: Arc<Pollable>) {
+        self.events.push(event_name, pollable);
+    }
+    //checks if descriptor has been added to the polling queue
+    pub fn is_pollable(&self, key: &str) -> bool {
+        self.events.contains(key)
     }
 
     //polls event queue to see if any of the events are readycar
-    pub async fn wait(&mut self) -> Option<Vec<String>> {
-        self.events.next().await
+    pub fn wait(&mut self) {
+        self.events.wait_for_pollables();
+    }
+
+    //checks if event is ready
+    pub fn check_ready(&mut self, event_name: &str) -> bool {
+        self.events.check_if_ready(event_name)
     }
 }
 
 impl WasmRuntimeAsyncEngine {
     /// function to execute futures
-    pub fn block_on<K, F: Future<Output = K>, Fun: FnOnce(Reactor) -> F>(async_closure: Fun) -> K {
-        let future = async_closure(Reactor::default());
+    pub fn block_on<K, F: Future<Output = K>, Fun: FnOnce() -> F>(async_closure: Fun) -> K {
+        let future = async_closure();
         pin_mut!(future);
         let (sender, recv) = crossbeam::channel::bounded(TASK_QUEUE_BUFFER);
         let runtime_engine = WasmRuntimeAsyncEngine {
@@ -49,6 +64,8 @@ impl WasmRuntimeAsyncEngine {
         let mut context = Context::from_waker(&waker);
         let _ = sender.send(()); //initial send;
         loop {
+            TIMERS.iter_mut().for_each(|mut cell| cell.update_elapsed());
+            REACTOR.lock().unwrap().wait();
             if runtime_engine.recv.recv().is_ok() {
                 if let Poll::Ready(res) = future.as_mut().poll(&mut context) {
                     return res;
@@ -74,6 +91,7 @@ impl Wake for FutureWaker {
 
 #[cfg(test)]
 mod test {
+   
     use super::*;
     use std::future::Future;
 
@@ -120,7 +138,7 @@ mod test {
         let count_future = CountFuture { max: 3, min: 0 };
 
         assert_eq!(
-            WasmRuntimeAsyncEngine::block_on(|_reactor| async move { count_future.await }),
+            WasmRuntimeAsyncEngine::block_on(|| async move { count_future.await }),
             3
         );
     }

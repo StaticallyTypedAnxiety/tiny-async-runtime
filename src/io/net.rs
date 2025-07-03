@@ -1,19 +1,22 @@
-use crate::bindings::wasi::{
-    io::{
-        poll::Pollable,
-        streams::{InputStream, OutputStream},
+use crate::{
+    bindings::wasi::{
+        io::{
+            poll::Pollable,
+            streams::{InputStream, OutputStream},
+        },
+        sockets::{
+            instance_network::instance_network,
+            network::{IpAddress, IpSocketAddress, Ipv4SocketAddress, Ipv6SocketAddress, Network},
+            tcp::{IpAddressFamily, TcpSocket},
+            tcp_create_socket::{create_tcp_socket, ErrorCode},
+        },
     },
-    sockets::{
-        instance_network::instance_network,
-        network::{IpAddress, IpSocketAddress, Ipv4SocketAddress, Ipv6SocketAddress, Network},
-        tcp::{IpAddressFamily, TcpSocket},
-        tcp_create_socket::{create_tcp_socket, ErrorCode},
-    },
+    engine::{NEXT_ID, REACTOR},
 };
-use std::cell::OnceCell;
 use std::io::ErrorKind;
 use std::net::IpAddr;
-use std::rc::Rc;
+use std::{cell::OnceCell, future::Future, sync::Arc, task::Poll};
+
 pub struct TcpStream {
     socket: TcpSocket,
     pollable: PollableRef,
@@ -23,7 +26,14 @@ pub struct TcpStream {
 }
 type IOResult<T> = std::io::Result<T>;
 type IOError = std::io::Error;
-type PollableRef = Rc<Pollable>;
+type PollableRef = Arc<Pollable>;
+
+struct ConnectionFuture<'a> {
+    stream: &'a mut TcpStream,
+    async_key: String,
+    address: IpAddress,
+    port: u16,
+}
 
 impl TcpStream {
     pub fn new_ipv4() -> IOResult<Self> {
@@ -39,14 +49,27 @@ impl TcpStream {
         let pollable = socket.subscribe();
         Ok(Self {
             socket,
-            pollable: Rc::new(pollable),
+            pollable: Arc::new(pollable),
             input_stream: OnceCell::new(),
             output_stream: OnceCell::new(),
             network: instance_network(),
         })
     }
+    //asynchronously connects to the ip address
+    pub async fn connect<T: Into<IpAddress>>(&mut self, address: T, port: u16) -> IOResult<()> {
+        let connect_future = ConnectionFuture {
+            stream: self,
+            async_key: format!(
+                "socket-connection={}",
+                NEXT_ID.load(std::sync::atomic::Ordering::Relaxed)
+            ),
+            address: address.into(),
+            port,
+        };
+        connect_future.await
+    }
 
-    pub fn start_connect<T: Into<IpAddress>>(&mut self, address: T, port: u16) -> IOResult<()> {
+    fn start_connect<T: Into<IpAddress>>(&mut self, address: T, port: u16) -> IOResult<()> {
         let ip_address: IpAddress = address.into();
         let socket_address = match ip_address {
             IpAddress::Ipv4(address) => IpSocketAddress::Ipv4(Ipv4SocketAddress { port, address }),
@@ -128,8 +151,28 @@ impl From<&ErrorCode> for ErrorKind {
     }
 }
 
-impl From<&TcpStream> for Rc<Pollable> {
-    fn from(socket: &TcpStream) -> Self {
-        socket.pollable.clone()
+impl<'a> Future for ConnectionFuture<'a> {
+    type Output = IOResult<()>;
+    fn poll(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Self::Output> {
+        let this = self.get_mut();
+        if !REACTOR.lock().unwrap().is_pollable(&this.async_key) {
+            this.stream.start_connect(this.address, this.port)?;
+            NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            REACTOR
+                .lock()
+                .unwrap()
+                .register(this.async_key.clone(), this.stream.pollable.clone());
+        }
+
+        //A PLACE TO CHECK IF THE REACTOR UPDATED THIS KEY
+        if REACTOR.lock().unwrap().check_ready(&this.async_key) {
+            this.stream.finish_connecting()?;
+            Poll::Ready(Ok(()))
+        } else {
+            Poll::Pending
+        }
     }
 }

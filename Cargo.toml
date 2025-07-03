@@ -8,7 +8,10 @@ edition = "2021"
 [dependencies]
 futures = "0.3.30"
 crossbeam = "0.8.4"
+dashmap = "6.1.0"
+lazy_static = "1.5.0"
 wit-bindgen-rt = { version = "0.30.0", features = ["bitflags"] }
+autoincrement = { version = "1", features = ["derive", "async"] }
 
 
 [package.metadata.component]
