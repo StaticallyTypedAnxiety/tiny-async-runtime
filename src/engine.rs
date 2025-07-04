@@ -1,15 +1,16 @@
-use crossbeam::channel::{Receiver, Sender};
+use crate::{bindings::wasi::io::poll::Pollable, poll_tasks::PollTasks};
+use crate::{io::timer::TIMERS, poll_tasks::EventWithWaker};
 use futures::pin_mut;
 use lazy_static::lazy_static;
 use std::{
     future::Future,
     pin::Pin,
-    sync::{atomic::AtomicU32, Arc, Mutex},
+    sync::{
+        atomic::{AtomicBool, AtomicU32, Ordering},
+        Arc, Mutex,
+    },
     task::{Context, Wake, Waker},
 };
-const TASK_QUEUE_BUFFER: usize = 1024;
-use crate::{bindings::wasi::io::poll::Pollable, poll_tasks::PollTasks};
-use crate::{io::timer::TIMERS, poll_tasks::EventWithWaker};
 lazy_static! {
     /// The global reactor for this runtime
     pub static ref REACTOR: Mutex<Reactor<'static>> = Mutex::new(Reactor::default());
@@ -23,20 +24,13 @@ pub struct WasmRuntimeAsyncEngine;
 /// the reactor that processes poll submissions. Still Experimental
 struct Task<'a> {
     task: Pin<Box<dyn Future<Output = ()> + Send + 'a>>,
-    notification: Receiver<()>,
     waker: Arc<FutureWaker>,
 }
 
 impl<'a> Task<'a> {
     fn new(task: Pin<Box<dyn Future<Output = ()> + Send + 'a>>) -> Self {
-        let (sender, notification) = crossbeam::channel::bounded(TASK_QUEUE_BUFFER);
-        let waker = Arc::new(FutureWaker(sender.clone()));
-        let _ = sender.send(()); //initial send;
-        Self {
-            task,
-            waker,
-            notification,
-        }
+        let waker = Arc::new(FutureWaker::default());
+        Self { task, waker }
     }
 }
 #[derive(Default)]
@@ -90,18 +84,15 @@ impl WasmRuntimeAsyncEngine {
             let mut reactor = REACTOR.lock().unwrap();
             reactor.wait();
             reactor.future_tasks.retain_mut(|task_info| {
-                if task_info
-                    .notification
-                    .recv_timeout(std::time::Duration::from_millis(100))
-                    .is_ok()
-                {
+                if task_info.waker.should_wake() {
+                    task_info.waker.reset();
                     let waker: Waker = task_info.waker.clone().into();
                     let mut context = Context::from_waker(&waker);
                     if task_info.task.as_mut().poll(&mut context).is_ready() {
-                        return true;
+                        return false;
                     }
                 }
-                false
+                true
             });
             if TIMERS.is_empty() && reactor.is_empty() {
                 break;
@@ -117,12 +108,25 @@ impl WasmRuntimeAsyncEngine {
     }
 }
 
-#[derive(Debug, Clone)]
-struct FutureWaker(Sender<()>);
+#[derive(Debug)]
+struct FutureWaker(AtomicBool);
 
+impl Default for FutureWaker {
+    fn default() -> Self {
+        Self(AtomicBool::new(true))
+    }
+}
 impl FutureWaker {
     fn wake_inner(&self) {
-        let _ = self.0.send(());
+        self.0.store(true, Ordering::Relaxed);
+    }
+
+    fn reset(&self) {
+        self.0.store(false, Ordering::Relaxed);
+    }
+
+    fn should_wake(&self) -> bool {
+        self.0.load(Ordering::Relaxed)
     }
 }
 
@@ -174,7 +178,6 @@ mod test {
         let mut context = Context::from_waker(&waker);
         futures::pin_mut!(count_future);
         let _ = count_future.as_mut().poll(&mut context);
-        assert_eq!(task.notification.len(), 2); //because the engine does an initial send to initialize everything
     }
 
     #[test]
