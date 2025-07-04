@@ -2,7 +2,6 @@ use crate::Timer;
 use crate::{bindings::wasi::io::poll::Pollable, poll_tasks::PollTasks};
 use crate::{io::timer::TIMERS, poll_tasks::EventWithWaker};
 use dashmap::DashMap;
-use futures::pin_mut;
 use lazy_static::lazy_static;
 use std::{
     future::Future,
@@ -13,9 +12,10 @@ use std::{
     },
     task::{Context, Wake, Waker},
 };
+use uuid::Uuid;
 lazy_static! {
     /// The global reactor for this runtime
-    pub static ref REACTOR: Mutex<Reactor<'static>> = Mutex::new(Reactor::default());
+    pub static ref REACTOR: Reactor<'static> = Reactor::default();
 
 }
 /// The async engine instance
@@ -35,19 +35,19 @@ impl<'a> Task<'a> {
 }
 #[derive(Default)]
 pub struct Reactor<'a> {
-    events: PollTasks,
-    future_tasks: Vec<Task<'a>>, //right now the engine holds the tasks but depending
+    events: Mutex<PollTasks>,
+    future_tasks: DashMap<Uuid, Mutex<Task<'a>>>, //right now the engine holds the tasks but depending
     timers: DashMap<String, EventWithWaker<Timer>>,
 }
 
 impl<'a> Reactor<'a> {
     //adds event to the queue
-    pub fn register(&mut self, event_name: String, pollable: EventWithWaker<Arc<Pollable>>) {
-        self.events.push(event_name, pollable);
+    pub fn register(&self, event_name: String, pollable: EventWithWaker<Arc<Pollable>>) {
+        self.events.lock().unwrap().push(event_name, pollable);
     }
     //checks if descriptor has been added to the polling queue
     pub fn is_pollable(&self, key: &str) -> bool {
-        self.events.contains(key)
+        self.events.lock().unwrap().contains(key)
     }
 
     //checks if timer is pollable
@@ -56,17 +56,17 @@ impl<'a> Reactor<'a> {
     }
 
     //polls event queue to see if any of the events are readycar
-    pub fn wait_for_io(&mut self) {
-        self.events.wait_for_pollables();
+    pub fn wait_for_io(&self) {
+        self.events.lock().unwrap().wait_for_pollables();
     }
 
     //checks if event is ready
-    pub fn check_ready(&mut self, event_name: &str) -> bool {
-        self.events.check_if_ready(event_name)
+    pub fn check_ready(&self, event_name: &str) -> bool {
+        self.events.lock().unwrap().check_if_ready(event_name)
     }
 
     pub fn is_empty(&self) -> bool {
-        self.events.is_empty() && self.future_tasks.is_empty()
+        self.events.lock().unwrap().is_empty() && self.future_tasks.is_empty()
     }
 
     pub(crate) fn update_timers(&self) {
@@ -85,36 +85,50 @@ impl<'a> Reactor<'a> {
             .unwrap_or_default()
     }
 
-    pub(crate) fn register_timer(&mut self, timer_name: String, event: EventWithWaker<Timer>) {
+    pub(crate) fn register_timer(&self, timer_name: String, event: EventWithWaker<Timer>) {
         self.timers.insert(timer_name, event);
+    }
+
+    pub(crate) fn push_task<K, F: Future<Output = K> + Send + 'static>(&self, future: F) -> Uuid {
+        let task = Task::new(Box::pin(async move {
+            let _result = future.await;
+        }));
+        let id = Uuid::new_v4();
+        self.future_tasks.insert(id, Mutex::new(task));
+        id
     }
 }
 
 impl WasmRuntimeAsyncEngine {
     /// function to execute futures
-    pub fn block_on<K, F: Future<Output = K> + Send, Fun: FnOnce() -> F>(async_closure: Fun) {
-        let future = async_closure();
-        pin_mut!(future);
-        let task = Task::new(Box::pin(async move {
-            let _result = future.await;
-        }));
-        let mut future_tasks = Vec::new();
-        future_tasks.push(task);
+    pub fn block_on<K, F: Future<Output = K> + Send + 'static>(future: F) {
+        let reactor = &REACTOR;
+        reactor.push_task(future);
         loop {
-            let mut reactor = REACTOR.lock().unwrap();
             reactor.update_timers();
             reactor.wait_for_io();
-            reactor.future_tasks.retain_mut(|task_info| {
-                if task_info.waker.should_wake() {
-                    task_info.waker.reset();
-                    let waker: Waker = task_info.waker.clone().into();
+
+            reactor.future_tasks.retain(|_, task_info| {
+                let waker = task_info.get_mut().unwrap().waker.clone();
+                if waker.should_wake() {
+                    waker.reset();
+                    let waker: Waker = waker.into();
                     let mut context = Context::from_waker(&waker);
-                    if task_info.task.as_mut().poll(&mut context).is_ready() {
+
+                    if task_info
+                        .get_mut()
+                        .unwrap()
+                        .task
+                        .as_mut()
+                        .poll(&mut context)
+                        .is_ready()
+                    {
                         return false;
                     }
                 }
                 true
             });
+
             if TIMERS.is_empty() && reactor.is_empty() {
                 break;
             }
@@ -122,10 +136,7 @@ impl WasmRuntimeAsyncEngine {
     }
 
     pub fn spawn<K, F: Future<Output = ()> + Send + 'static>(future: F) {
-        let task = Task::new(Box::pin(async move {
-            let _result = future.await;
-        }));
-        REACTOR.lock().unwrap().future_tasks.push(task);
+        REACTOR.push_task(future);
     }
 }
 
@@ -188,14 +199,15 @@ mod test {
     #[test]
     fn test_enqueue() {
         let count_future = CountFuture { max: 3, min: 0 };
-        let mut reactor = Reactor::default();
-        reactor.future_tasks.push(Task::new(Box::pin(async move {
+        let reactor = Reactor::default();
+        let id = reactor.push_task(async move {
             count_future.await;
-        })));
-        let task = reactor.future_tasks.first_mut().unwrap();
-        let fut_waker = task.waker.clone();
+        });
+        let mut future_task = reactor.future_tasks.get_mut(&id).unwrap();
+        let task = future_task.value_mut();
+        let fut_waker = task.lock().unwrap().waker.clone();
         let waker: Waker = fut_waker.into();
-        let count_future = &mut task.task;
+        let count_future = &mut task.lock().unwrap().task;
         let mut context = Context::from_waker(&waker);
         futures::pin_mut!(count_future);
         let _ = count_future.as_mut().poll(&mut context);
@@ -205,6 +217,6 @@ mod test {
     fn test_block_on() {
         let count_future = CountFuture { max: 3, min: 0 };
 
-        WasmRuntimeAsyncEngine::block_on(|| async move { assert_eq!(count_future.await, 3) });
+        WasmRuntimeAsyncEngine::block_on(async move { assert_eq!(count_future.await, 3) });
     }
 }

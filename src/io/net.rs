@@ -157,16 +157,16 @@ impl<'a> Future for ConnectionFuture<'a> {
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
         let this = self.get_mut();
-        if !REACTOR.lock().unwrap().is_pollable(&this.async_key) {
+        if !REACTOR.is_pollable(&this.async_key) {
             this.stream.start_connect(this.address, this.port)?;
-            REACTOR.lock().unwrap().register(
+            REACTOR.register(
                 this.async_key.clone(),
                 (this.stream.pollable.clone(), cx.waker().clone()),
             );
         }
 
         //A PLACE TO CHECK IF THE REACTOR UPDATED THIS KEY
-        if REACTOR.lock().unwrap().check_ready(&this.async_key) {
+        if REACTOR.check_ready(&this.async_key) {
             this.stream.finish_connecting()?;
             Poll::Ready(Ok(()))
         } else {

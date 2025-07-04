@@ -34,7 +34,6 @@ impl Timer {
     }
 
     pub async fn timeout<K, F: Future<Output = K>>(
-        &self,
         fut: F,
         deadline: std::time::Duration,
     ) -> std::io::Result<K> {
@@ -75,7 +74,7 @@ impl Future for TimeFuture {
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
         let this = self.get_mut();
-        let mut reactor = REACTOR.lock().unwrap();
+        let reactor = &REACTOR;
         if reactor.is_timer_pollable(&this.timer_key) {
             let has_elapsed = reactor.timer_has_elapsed(&this.timer_key);
             if has_elapsed {
