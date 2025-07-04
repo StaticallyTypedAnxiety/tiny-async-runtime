@@ -1,11 +1,11 @@
+use crate::engine::REACTOR;
+use crate::poll_tasks::EventWithWaker;
 use dashmap::DashMap;
 use lazy_static::lazy_static;
 use std::future::Future;
 use std::time::Duration;
 use std::time::Instant;
-
-use crate::engine::NEXT_ID;
-use crate::poll_tasks::EventWithWaker;
+use uuid::Uuid;
 lazy_static! {
     pub static ref TIMERS: DashMap<u32, EventWithWaker<Timer>> = DashMap::new();
 }
@@ -21,7 +21,7 @@ impl Timer {
     /// create a timer that resolves once it elapses
     pub async fn sleep(until: std::time::Duration) {
         let timeout = TimeoutFuture {
-            id: None,
+            timer_key: format!("sleep-{}", Uuid::new_v4()),
             timer: Self {
                 at: Instant::now(),
                 until,
@@ -36,7 +36,6 @@ impl Timer {
             .checked_duration_since(self.at)
             .map(|s| s > self.until)
             .unwrap_or_default();
-        println!("elapsed {elapsed}");
         self.elapsed = elapsed;
     }
 
@@ -46,7 +45,7 @@ impl Timer {
 }
 
 struct TimeoutFuture {
-    id: Option<u32>,
+    timer_key: String,
     timer: Timer,
 }
 
@@ -57,19 +56,17 @@ impl Future for TimeoutFuture {
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
         let this = self.get_mut();
-        match this.id {
-            Some(id) => {
-                let has_elapsed = TIMERS.get(&id).map(|s| s.0.elapsed()).unwrap_or_default();
-                if has_elapsed {
-                    return std::task::Poll::Ready(());
-                }
+        let mut reactor = REACTOR.lock().unwrap();
+        if reactor.is_timer_pollable(&this.timer_key) {
+            let has_elapsed = reactor.timer_has_elapsed(&this.timer_key);
+            if has_elapsed {
+                return std::task::Poll::Ready(());
             }
-            None => {
-                let id = NEXT_ID.load(std::sync::atomic::Ordering::Relaxed);
-                TIMERS.insert(id, (this.timer.clone(), cx.waker().clone()));
-                NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                let _ = this.id.insert(id);
-            }
+        } else {
+            reactor.register_timer(
+                this.timer_key.clone(),
+                (this.timer.clone(), cx.waker().clone()),
+            );
         }
 
         std::task::Poll::Pending

@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use crate::{
     bindings::wasi::{
         io::{
@@ -11,7 +13,7 @@ use crate::{
             tcp_create_socket::{create_tcp_socket, ErrorCode},
         },
     },
-    engine::{NEXT_ID, REACTOR},
+    engine::REACTOR,
 };
 use std::io::ErrorKind;
 use std::net::IpAddr;
@@ -59,10 +61,7 @@ impl TcpStream {
     pub async fn connect<T: Into<IpAddress>>(&mut self, address: T, port: u16) -> IOResult<()> {
         let connect_future = ConnectionFuture {
             stream: self,
-            async_key: format!(
-                "socket-connection={}",
-                NEXT_ID.load(std::sync::atomic::Ordering::Relaxed)
-            ),
+            async_key: format!("socket-connection={}", Uuid::new_v4()),
             address: address.into(),
             port,
         };
@@ -160,7 +159,6 @@ impl<'a> Future for ConnectionFuture<'a> {
         let this = self.get_mut();
         if !REACTOR.lock().unwrap().is_pollable(&this.async_key) {
             this.stream.start_connect(this.address, this.port)?;
-            NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             REACTOR.lock().unwrap().register(
                 this.async_key.clone(),
                 (this.stream.pollable.clone(), cx.waker().clone()),
