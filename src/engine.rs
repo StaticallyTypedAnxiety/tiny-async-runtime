@@ -1,21 +1,21 @@
 use crate::Timer;
 use crate::{bindings::wasi::io::poll::Pollable, poll_tasks::PollTasks};
 use crate::{io::timer::TIMERS, poll_tasks::EventWithWaker};
+use crossbeam::queue::SegQueue;
 use dashmap::DashMap;
 use lazy_static::lazy_static;
 use std::{
     future::Future,
     pin::Pin,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc, Mutex,
-    },
+    sync::{Arc, Mutex},
     task::{Context, Wake, Waker},
 };
 use uuid::Uuid;
 lazy_static! {
     /// The global reactor for this runtime
     pub static ref REACTOR: Reactor<'static> = Reactor::default();
+    //queue for ready tasks
+    pub static ref READY_QUEUE: SegQueue<Uuid> = SegQueue::new();
 
 }
 /// The async engine instance
@@ -28,8 +28,8 @@ struct Task<'a> {
 }
 
 impl<'a> Task<'a> {
-    fn new(task: Pin<Box<dyn Future<Output = ()> + Send + 'a>>) -> Self {
-        let waker = Arc::new(FutureWaker::default());
+    fn new(id: Uuid, task: Pin<Box<dyn Future<Output = ()> + Send + 'a>>) -> Self {
+        let waker = Arc::new(FutureWaker::new(id));
         Self { task, waker }
     }
 }
@@ -90,11 +90,15 @@ impl<'a> Reactor<'a> {
     }
 
     pub(crate) fn push_task<K, F: Future<Output = K> + Send + 'static>(&self, future: F) -> Uuid {
-        let task = Task::new(Box::pin(async move {
-            let _result = future.await;
-        }));
         let id = Uuid::new_v4();
+        let task = Task::new(
+            id,
+            Box::pin(async move {
+                let _result = future.await;
+            }),
+        );
         self.future_tasks.insert(id, Mutex::new(task));
+        READY_QUEUE.push(id);
         id
     }
 }
@@ -107,27 +111,15 @@ impl WasmRuntimeAsyncEngine {
         loop {
             reactor.update_timers();
             reactor.wait_for_io();
-
-            reactor.future_tasks.retain(|_, task_info| {
-                let waker = task_info.get_mut().unwrap().waker.clone();
-                if waker.should_wake() {
-                    waker.reset();
+            while let Some(id) = READY_QUEUE.pop() {
+                reactor.future_tasks.remove_if_mut(&id, |_, task_info| {
+                    let task_ref = task_info.get_mut().unwrap();
+                    let waker = task_ref.waker.clone();
                     let waker: Waker = waker.into();
                     let mut context = Context::from_waker(&waker);
-
-                    if task_info
-                        .get_mut()
-                        .unwrap()
-                        .task
-                        .as_mut()
-                        .poll(&mut context)
-                        .is_ready()
-                    {
-                        return false;
-                    }
-                }
-                true
-            });
+                    task_ref.task.as_mut().poll(&mut context).is_ready()
+                });
+            }
 
             if TIMERS.is_empty() && reactor.is_empty() {
                 break;
@@ -141,24 +133,16 @@ impl WasmRuntimeAsyncEngine {
 }
 
 #[derive(Debug)]
-struct FutureWaker(AtomicBool);
-
-impl Default for FutureWaker {
-    fn default() -> Self {
-        Self(AtomicBool::new(true))
-    }
+struct FutureWaker {
+    id: Uuid,
 }
+
 impl FutureWaker {
+    pub fn new(id: Uuid) -> Self {
+        Self { id }
+    }
     fn wake_inner(&self) {
-        self.0.store(true, Ordering::Relaxed);
-    }
-
-    fn reset(&self) {
-        self.0.store(false, Ordering::Relaxed);
-    }
-
-    fn should_wake(&self) -> bool {
-        self.0.load(Ordering::Relaxed)
+        READY_QUEUE.push(self.id);
     }
 }
 
