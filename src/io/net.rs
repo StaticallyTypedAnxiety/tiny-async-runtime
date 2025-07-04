@@ -161,10 +161,10 @@ impl<'a> Future for ConnectionFuture<'a> {
         if !REACTOR.lock().unwrap().is_pollable(&this.async_key) {
             this.stream.start_connect(this.address, this.port)?;
             NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-            REACTOR
-                .lock()
-                .unwrap()
-                .register(this.async_key.clone(), this.stream.pollable.clone());
+            REACTOR.lock().unwrap().register(
+                this.async_key.clone(),
+                (this.stream.pollable.clone(), cx.waker().clone()),
+            );
         }
 
         //A PLACE TO CHECK IF THE REACTOR UPDATED THIS KEY

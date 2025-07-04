@@ -5,11 +5,12 @@ use std::time::Duration;
 use std::time::Instant;
 
 use crate::engine::NEXT_ID;
+use crate::poll_tasks::EventWithWaker;
 lazy_static! {
-    pub static ref TIMERS: DashMap<u32, Timer> = DashMap::new();
+    pub static ref TIMERS: DashMap<u32, EventWithWaker<Timer>> = DashMap::new();
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Timer {
     at: Instant,
     until: Duration,
@@ -19,17 +20,14 @@ pub struct Timer {
 impl Timer {
     /// create a timer that resolves once it elapses
     pub async fn sleep(until: std::time::Duration) {
-        let id = NEXT_ID.load(std::sync::atomic::Ordering::Relaxed);
-        TIMERS.insert(
-            id,
-            Self {
+        let timeout = TimeoutFuture {
+            id: None,
+            timer: Self {
                 at: Instant::now(),
                 until,
                 elapsed: false,
             },
-        );
-        NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let timeout = TimeoutFuture { id };
+        };
         timeout.await
     }
     pub fn update_elapsed(&mut self) {
@@ -48,7 +46,8 @@ impl Timer {
 }
 
 struct TimeoutFuture {
-    id: u32,
+    id: Option<u32>,
+    timer: Timer,
 }
 
 impl Future for TimeoutFuture {
@@ -57,14 +56,22 @@ impl Future for TimeoutFuture {
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
-        let has_elapsed = TIMERS
-            .get(&self.id)
-            .map(|s| s.elapsed())
-            .unwrap_or_default();
-        if has_elapsed {
-            return std::task::Poll::Ready(());
+        let this = self.get_mut();
+        match this.id {
+            Some(id) => {
+                let has_elapsed = TIMERS.get(&id).map(|s| s.0.elapsed()).unwrap_or_default();
+                if has_elapsed {
+                    return std::task::Poll::Ready(());
+                }
+            }
+            None => {
+                let id = NEXT_ID.load(std::sync::atomic::Ordering::Relaxed);
+                TIMERS.insert(id, (this.timer.clone(), cx.waker().clone()));
+                NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                let _ = this.id.insert(id);
+            }
         }
-        cx.waker().wake_by_ref();
+
         std::task::Poll::Pending
     }
 }
