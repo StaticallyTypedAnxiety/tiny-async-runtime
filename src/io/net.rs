@@ -15,9 +15,9 @@ use crate::{
     },
     engine::REACTOR,
 };
+use std::io::ErrorKind;
 use std::net::IpAddr;
 use std::{cell::OnceCell, future::Future, sync::Arc, task::Poll};
-use std::io::ErrorKind;
 
 pub struct TcpStream {
     socket: TcpSocket,
