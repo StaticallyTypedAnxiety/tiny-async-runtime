@@ -9,15 +9,15 @@ use crate::{
         sockets::{
             instance_network::instance_network,
             network::{IpAddress, IpSocketAddress, Ipv4SocketAddress, Ipv6SocketAddress, Network},
-            tcp::{IpAddressFamily, TcpSocket},
+            tcp::{IpAddressFamily, ShutdownType, TcpSocket},
             tcp_create_socket::{create_tcp_socket, ErrorCode},
         },
     },
     engine::REACTOR,
 };
-use std::io::ErrorKind;
 use std::net::IpAddr;
 use std::{cell::OnceCell, future::Future, sync::Arc, task::Poll};
+use std::io::ErrorKind;
 
 pub struct TcpStream {
     socket: TcpSocket,
@@ -88,6 +88,12 @@ impl TcpStream {
         let _ = self.input_stream.set(input);
         let _ = self.output_stream.set(output);
         Ok(())
+    }
+}
+
+impl Drop for TcpStream {
+    fn drop(&mut self) {
+        let _ = self.socket.shutdown(ShutdownType::Both);
     }
 }
 
@@ -170,7 +176,6 @@ impl<'a> Future for ConnectionFuture<'a> {
             this.stream.finish_connecting()?;
             Poll::Ready(Ok(()))
         } else {
-            cx.waker().wake_by_ref();
             Poll::Pending
         }
     }

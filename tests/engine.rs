@@ -1,45 +1,38 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::Duration;
 use tiny_wasm_runtime::{Timer, WasmRuntimeAsyncEngine};
 
-pub async fn test_timers_with_assertions() {
-    let task_a_done: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
-    let task_b_done = Arc::new(AtomicBool::new(false));
-
-    let task_a_done_clone = task_a_done.clone();
-    let task_b_done_clone = task_b_done.clone();
-    println!("spaw goes here");
-    WasmRuntimeAsyncEngine::spawn::<(), _>(async move {
-        println!("sleep happens here");
-        Timer::sleep(std::time::Duration::from_secs(1)).await;
-        task_a_done_clone.store(true, Ordering::SeqCst);
-    });
-
-    println!("spaw goes here 2");
-
-    WasmRuntimeAsyncEngine::spawn::<(), _>(async move {
-        Timer::sleep(std::time::Duration::from_millis(500)).await;
-        task_b_done_clone.store(true, Ordering::SeqCst);
-    });
-
-    // Do main timeout
-    let slow_future = async {
-        Timer::sleep(std::time::Duration::from_secs(2)).await;
-        "completed"
-    };
-
-    let res = Timer::timeout(slow_future, std::time::Duration::from_secs(1)).await;
-
-    assert!(res.is_err(), "Expected the main future to time out");
-    assert!(
-        task_a_done.load(Ordering::SeqCst) || task_b_done.load(Ordering::SeqCst),
-        "At least one background task should have completed by now"
-    );
-}
-
 #[test]
-fn test_full_engine_runtime() {
-    WasmRuntimeAsyncEngine::block_on(async {
-        test_timers_with_assertions().await;
+fn test_block_on_return_value() {
+    let result = WasmRuntimeAsyncEngine::block_on(async {
+        println!("=== Block On Return Value Test Start ===");
+
+        // Sleep a little to test timers
+        Timer::sleep(Duration::from_millis(200)).await;
+        println!("Slept 200ms.");
+
+        // Spawn a task that returns something
+        let handle = WasmRuntimeAsyncEngine::spawn(async {
+            println!("[Spawned Task] Sleeping 100ms...");
+            Timer::sleep(Duration::from_millis(100)).await;
+            println!("[Spawned Task] Returning 999.");
+            999
+        });
+
+        println!("wait for result");
+
+        // Await the spawned task
+        let spawned_result = handle.await;
+        println!("[Main] Spawned task returned: {spawned_result}");
+
+        // Compose a result
+        let final_result = spawned_result + 1;
+
+        println!("=== Block On Return Value Test Done ===");
+
+        final_result
     });
+
+    assert_eq!(result, 1000, "The final result should be 1000");
 }

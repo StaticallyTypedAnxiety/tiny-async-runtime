@@ -78,6 +78,7 @@ impl Future for TimeFuture {
         if reactor.is_timer_pollable(&this.timer_key) {
             let has_elapsed = reactor.timer_has_elapsed(&this.timer_key);
             if has_elapsed {
+                reactor.remove_timer(&this.timer_key);
                 return std::task::Poll::Ready(());
             }
         } else {
