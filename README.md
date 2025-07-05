@@ -1,4 +1,4 @@
-# Simple Async Wasm Runtime
+# Tiny Async Runtime
 - The basis of this repo is to create a very simple asynchronous runtime that can be used with wasi-preview 2
 ## features
 - [x] single threaded
