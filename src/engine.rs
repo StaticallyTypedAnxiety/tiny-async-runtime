@@ -179,9 +179,6 @@ impl WasmRuntimeAsyncEngine {
                     if polling_state.is_ready() {
                         entry.remove();
                     }
-                } else {
-                    //task was spawned but queue was not drained yet
-                    READY_QUEUE.push(id);
                 }
             }
 
