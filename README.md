@@ -11,7 +11,7 @@ It provides:
 This runtime is inspired by `mio` but is purpose-built for WASI environments.
 
 
-## ✨ Features
+## Features
 
 - **`block_on()`**  
   Runs an async function to completion, driving timers, I/O readiness, and spawned tasks.
@@ -30,7 +30,7 @@ This runtime is inspired by `mio` but is purpose-built for WASI environments.
 - **Partial Support for Sockets**
    - At this point sockets can only connect but planned support is coming to the future
 
-## 🚀 Example
+## Example
 
 Here’s a minimal example using `block_on` and `spawn`:
 
