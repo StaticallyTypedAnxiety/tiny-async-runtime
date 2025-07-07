@@ -12,12 +12,12 @@ fn test_tcp_stream_connect() {
     WasmRuntimeAsyncEngine::block_on(async {
         println!("=== TcpStream Connect Test Start ===");
 
-        // 1️⃣ Create the TCP stream
+        // Create the TCP stream
         let mut stream = TcpStream::new_ipv4().expect("Failed to create TCP stream");
 
         println!("[Main] Created TcpStream.");
 
-        // 2️⃣ Attempt to connect to localhost:8080
+        // Attempt to connect to localhost:8080
         let addr = IpAddr::from_str("127.0.0.1").expect("Invalid IP address");
 
         let connect_result = stream.connect(addr, 63000).await;
@@ -38,7 +38,7 @@ fn test_tcp_stream_connect() {
             }
         }
 
-        // 3️⃣ Wait a little to simulate doing work
+        // Wait a little to simulate doing work
         Timer::sleep(Duration::from_millis(200)).await;
         println!("[Main] Done waiting, TcpStream will now be dropped.");
 

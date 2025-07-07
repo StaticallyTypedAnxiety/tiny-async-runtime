@@ -49,7 +49,7 @@ fn test_timeout_behavior() {
     WasmRuntimeAsyncEngine::block_on(async {
         println!("=== Timeout Behavior Test Start ===");
 
-        // 1️⃣ This should complete successfully
+        //  This should complete successfully
         let fast_future = async {
             println!("[Fast Future] Sleeping 100ms...");
             Timer::sleep(Duration::from_millis(100)).await;
@@ -65,7 +65,7 @@ fn test_timeout_behavior() {
         );
         assert_eq!(result_fast.unwrap(), "fast_result");
 
-        // 2️⃣ This should time out
+        // This should time out
         let slow_future = async {
             println!("[Slow Future] Sleeping 2s...");
             Timer::sleep(Duration::from_secs(2)).await;
@@ -79,7 +79,7 @@ fn test_timeout_behavior() {
         let err = result_slow.unwrap_err();
         assert_eq!(err.kind(), std::io::ErrorKind::TimedOut);
 
-        // 3️⃣ This should be right on the edge (expect to succeed)
+        // This should be right on the edge (expect to succeed)
         let edge_future = async {
             println!("[Edge Future] Sleeping 500ms...");
             Timer::sleep(Duration::from_millis(500)).await;
