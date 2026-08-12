@@ -166,9 +166,3 @@ that doesn't touch WASI 0.3 async imports, so it needs none of this --
 `cargo run --target wasm32-wasip2 --bin high-frequency-benchmark` works
 normally.
 
-## More Docs
-
-For a deeper walkthrough, see:
-
-- `docs/ARCHITECTURE.md`
-- `docs/DEVELOPMENT.md`
