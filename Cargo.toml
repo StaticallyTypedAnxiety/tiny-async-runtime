@@ -2,28 +2,72 @@
 name = "tiny-wasm-runtime"
 version = "0.1.0"
 edition = "2021"
+autotests = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 futures = "0.3.30"
-dashmap = "6.1.0"
-lazy_static = "1.5.0"
-wit-bindgen-rt = { version = "0.30.0", features = ["bitflags"] }
-autoincrement = { version = "1", features = ["derive", "async"] }
+wit-bindgen = { version = "0.60.0", features = ["async", "async-spawn", "bitflags"] }
 pin-project-lite = "0.2.16"
-crossbeam = "0.8.4"
-[dependencies.uuid]
-version = "1.17.0"
-# Lets you generate random UUIDs
-features = [
-    "v4",
-]
+tiny-wasm-runtime-macros = { path = "tiny-wasm-runtime-macros" }
 
 [package.metadata.component]
 package = "component:wasm-runtime"
 
 [package.metadata.component.target.dependencies]
-"wasi:io" = {path = "wit/deps/io"}
 "wasi:clocks" = {path = "wit/deps/clocks"}
 "wasi:sockets" = {path = "wit/deps/sockets"}
+"wasi:cli" = {path = "wit/deps/cli"}
+
+[[example]]
+name = "basic_usage"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "macro_main"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "test-engine"
+path = "tests/engine.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "test-timers"
+path = "tests/timers.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "test-macro-main"
+path = "tests/macro_main.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "test-usage-example"
+path = "tests/usage_example.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "test-network"
+path = "tests/network.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "experiment-directory-server"
+path = "examples/chat/directory_server.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "experiment-chat-peer"
+path = "examples/chat/chat_peer.rs"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "experiment-chat-demo"
+path = "examples/chat/chat_demo.rs"
+crate-type = ["cdylib"]
+
+[[bin]]
+name = "high-frequency-benchmark"
+path = "benchmarks/high_frequency_benchmark.rs"

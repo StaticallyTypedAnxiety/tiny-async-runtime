@@ -2,6 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use tiny_wasm_runtime::{Timer, WasmRuntimeAsyncEngine};
+
 pub async fn test_timers_with_assertions() {
     let task_a_done: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
     let task_b_done = Arc::new(AtomicBool::new(false));
@@ -37,15 +38,13 @@ pub async fn test_timers_with_assertions() {
     );
 }
 
-#[test]
-fn test_full_engine_runtime() {
+async fn test_full_engine_runtime() {
     WasmRuntimeAsyncEngine::block_on(async {
         test_timers_with_assertions().await;
     });
 }
 
-#[test]
-fn test_timeout_behavior() {
+async fn test_timeout_behavior() {
     WasmRuntimeAsyncEngine::block_on(async {
         println!("=== Timeout Behavior Test Start ===");
 
@@ -97,4 +96,17 @@ fn test_timeout_behavior() {
 
         println!("=== Timeout Behavior Test Complete ===");
     });
+}
+
+tiny_wasm_runtime::async_command! {
+    macro_rules! run_test {
+        ($name:ident) => {{
+            println!("test {} ...", stringify!($name));
+            $name().await;
+            println!("test {} ... ok", stringify!($name));
+        }};
+    }
+
+    run_test!(test_full_engine_runtime);
+    run_test!(test_timeout_behavior);
 }

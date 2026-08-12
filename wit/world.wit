@@ -2,9 +2,11 @@ package component:wasm-runtime;
 
 /// An example world for the component to target.
 world wasm-runtime {
-    import wasi:io/poll@0.2.0;
-    import wasi:clocks/monotonic-clock@0.2.0;
-    import wasi:sockets/tcp-create-socket@0.2.0;
-    import wasi:sockets/tcp@0.2.0;
-    import wasi:sockets/instance-network@0.2.0;
+    import wasi:clocks/monotonic-clock@0.3.0;
+    import wasi:sockets/types@0.3.0;
+}
+
+world wasm-runtime-command {
+    include wasm-runtime;
+    export wasi:cli/run@0.3.0;
 }
