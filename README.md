@@ -13,11 +13,7 @@ This runtime is inspired by `mio` but is purpose-built for WASI environments.
 
 ## Running In The Right Environment
 
-This crate is meant to be validated in a **WASI Preview 3** host, not as a plain native executable.
-
-- The socket and clock support depends on Preview 3 (WASI 0.3.0) imports from `wit/world.wit`.
-- Native host runs such as `cargo build`/`cargo check` on Windows or Linux do not provide those imports (they compile fine -- the extern imports are just stubbed to `unreachable!()` off-`wasm32` -- but calling them there panics).
-- There is no `wasm32-wasip3` rustc target yet, so components still compile for `wasm32-wasip2` and run under a wasmtime built with WASI 0.3 support (**wasmtime 43+**; validated against 47.0.3), with `-S p3=y` passed to enable it.
+This crate is meant to be validated in a **WASI Preview 3** host.
 
 ## Example
 
@@ -37,20 +33,4 @@ async fn main() {
     println!("Background task returned: {result}");
 }
 ```
-
-This is equivalent to writing the `Guest`/`export_command!` boilerplate by
-hand (see above), and is what `examples/basic_usage.rs` and
-`examples/macro_main.rs` do.
-
-The five files under `tests/` instead use `async_command!`, since their test
-bodies each call `block_on` themselves and can't be wrapped in another one:
-
-```rust
-tiny_wasm_runtime::async_command! {
-    println!("running a test...");
-    some_async_test_fn().await;
-}
-```
-
-
 

@@ -1,6 +1,6 @@
 [package]
 name = "tiny-wasm-runtime"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 autotests = false
 description = "A minimal, single-threaded async runtime for WASI Preview 3 components"
