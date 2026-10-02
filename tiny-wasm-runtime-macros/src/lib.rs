@@ -1,3 +1,6 @@
+//! `#[main]`/`async_command!` for `tiny-wasm-runtime`: export a WASI 0.3
+//! `wasi:cli/run` entrypoint without hand-writing the `Guest` impl.
+
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{

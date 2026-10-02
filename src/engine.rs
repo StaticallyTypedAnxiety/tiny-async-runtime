@@ -1,3 +1,7 @@
+//! `block_on` drives a future to completion via `wit_bindgen`'s
+//! component-model-async support; `spawn` runs another one alongside it and
+//! returns a cancellable [`JoinHandle`].
+
 use futures::channel::oneshot;
 use futures::FutureExt;
 use std::future::Future;

@@ -1,3 +1,5 @@
+//! `Timer::sleep`/`Timer::timeout` over `wasi:clocks/monotonic-clock`.
+
 use crate::bindings::wasi::clocks::monotonic_clock::wait_for;
 use std::future::Future;
 use std::task::Poll;

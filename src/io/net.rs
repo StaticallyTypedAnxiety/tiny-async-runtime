@@ -1,3 +1,6 @@
+//! `TcpStream`/`TCPListener` over `wasi:sockets/types@0.3.0`'s `tcp-socket`
+//! resource.
+
 use crate::bindings::{
     wasi::sockets::types::{ErrorCode, IpAddress, IpAddressFamily, IpSocketAddress, TcpSocket},
     wit_stream,
