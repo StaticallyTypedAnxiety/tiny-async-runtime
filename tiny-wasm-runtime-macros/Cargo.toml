@@ -2,6 +2,9 @@
 name = "tiny-wasm-runtime-macros"
 version = "0.1.0"
 edition = "2021"
+description = "Proc macros for tiny-wasm-runtime: export a WASI 0.3 wasi:cli/run entrypoint without hand-writing the Guest impl"
+license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
+repository = "https://github.com/StaticallyTypedAnxiety/tiny-async-runtime"
 
 [lib]
 proc-macro = true

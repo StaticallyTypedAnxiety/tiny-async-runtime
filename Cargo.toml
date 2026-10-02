@@ -3,14 +3,22 @@ name = "tiny-wasm-runtime"
 version = "0.1.0"
 edition = "2021"
 autotests = false
+description = "A minimal, single-threaded async runtime for WASI Preview 3 components"
+license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
+repository = "https://github.com/StaticallyTypedAnxiety/tiny-async-runtime"
+readme = "README.md"
+keywords = ["wasi", "wasm", "async", "component-model"]
+categories = ["wasm", "asynchronous", "network-programming"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[package.metadata.docs.rs]
+targets = ["wasm32-wasip2"]
+default-target = "wasm32-wasip2"
 
 [dependencies]
 futures = "0.3.30"
 wit-bindgen = { version = "0.60.0", features = ["async", "async-spawn", "bitflags"] }
 pin-project-lite = "0.2.16"
-tiny-wasm-runtime-macros = { path = "tiny-wasm-runtime-macros" }
+tiny-wasm-runtime-macros = { version = "0.1.0", path = "tiny-wasm-runtime-macros" }
 
 [package.metadata.component]
 package = "component:wasm-runtime"
